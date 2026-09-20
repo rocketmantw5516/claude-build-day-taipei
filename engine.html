@@ -68,7 +68,7 @@ pointer-events:none;display:none;box-shadow:0 8px 30px #000a}
 #card p.w{color:var(--amber)}#card small{color:var(--muted);font:10px var(--mono)}
 #report{position:fixed;z-index:30;right:24px;top:70px;width:min(470px,90vw);background:#0d1524;border:2px solid var(--red);border-radius:10px;
 padding:16px 18px;transform:translateX(120%);transition:transform .5s cubic-bezier(.2,.9,.3,1);box-shadow:0 12px 50px #000c}
-#report.show{transform:none;box-shadow:0 0 0 3000px #05070db0,0 12px 50px #000c}#report.good{border-color:var(--green)}
+#report.show{transform:none;box-shadow:0 0 0 3000px #05070d66,0 12px 50px #000c}#report.good{border-color:var(--green)}
 #report h2{margin:0 0 2px;font-size:20px}#report .code{font:11px var(--mono);color:var(--muted)}
 #report h5{margin:10px 0 2px;font:600 10px var(--mono);color:var(--muted);letter-spacing:.1em}
 #report p{margin:0;font-size:13px}#rNum{font:600 13px var(--mono)!important;color:var(--amber)}
@@ -1732,7 +1732,7 @@ const COACH=(function(){
   function tick(){
     bar.style.display=on?"flex":"none";if(!on){ring.style.display="none";return;}
     if(window.__macro){const m=window.__macro;kEl.textContent="AUTO DEMO · "+m.name;doEl.textContent=m.txt||"";sayEl.innerHTML=m.say?"<i>SAY</i>":"";if(m.say)sayEl.appendChild(document.createTextNode(m.say));bar.className="";
-      const r0=m.target&&m.target.getBoundingClientRect();if(r0&&r0.width>0){ring.style.display="block";ring.className="";ring.style.left=(r0.left-6)+"px";ring.style.top=(r0.top-6)+"px";ring.style.width=(r0.width+12)+"px";ring.style.height=(r0.height+12)+"px";}else ring.style.display="none";return;}
+      const r0=m.target&&!(S.ending&&!$("report").contains(m.target))&&m.target.getBoundingClientRect();if(r0&&r0.width>0){ring.style.display="block";ring.className="";ring.style.left=(r0.left-6)+"px";ring.style.top=(r0.top-6)+"px";ring.style.width=(r0.width+12)+"px";ring.style.height=(r0.height+12)+"px";}else ring.style.display="none";return;}
     let st=cur(),guard=0;
     while(guard++<40){
       if(st.space!==undefined){ if(S.ending||stepIdx>st.space||mode!=="guided"&&false){ if(S.ending){ // an ending interrupts the guided run: jump to the reset step of this script
@@ -1747,7 +1747,7 @@ const COACH=(function(){
     doEl.textContent=txt;sayEl.innerHTML=say?"<i>SAY</i>":"";if(say)sayEl.appendChild(document.createTextNode(say));
     bar.className=waiting?"wait":"";
     const r=target&&target.getBoundingClientRect();
-    if(r&&r.width>0&&r.bottom>0){ring.style.display="block";ring.style.opacity=(S.ending&&target===$("stand"))?"0.2":"1";ring.className=waiting?"wait":"";ring.style.left=(r.left-6)+"px";ring.style.top=(r.top-6)+"px";ring.style.width=(r.width+12)+"px";ring.style.height=(r.height+12)+"px";}
+    if(r&&r.width>0&&r.bottom>0){ring.style.display="block";ring.style.opacity=(S.ending&&!$("report").contains(target))?"0":"1";ring.className=waiting?"wait":"";ring.style.left=(r.left-6)+"px";ring.style.top=(r.top-6)+"px";ring.style.width=(r.width+12)+"px";ring.style.height=(r.height+12)+"px";}
     else ring.style.display="none";
   }
   setInterval(tick,100);
