@@ -1,0 +1,3 @@
+[{"wait":500},{"click":"#mac2"},{"waitFor":"!!S.ending","timeout":9000,"label":"mac2 ending"},{"eval":"S.ending.code","label":"mac2 code"},{"wait":2800},{"shot":"mac2"},
+ {"click":"#mac3"},{"waitFor":"!!S.ending","timeout":12000,"label":"mac3 ending"},{"eval":"S.ending&&S.ending.code","label":"mac3 code"},{"wait":2800},{"shot":"mac3"},
+ {"click":"#mac1"},{"wait":7000},{"eval":"'lit='+S.lit+' F='+NOZ.F.toFixed(0)","label":"mac1 burn"},{"shot":"mac1-burn"},{"waitFor":"!!S.ending","timeout":16000,"label":"mac1 ending"},{"eval":"S.ending&&S.ending.code","label":"mac1 code"},{"wait":1500},{"shot":"mac1-end"}]

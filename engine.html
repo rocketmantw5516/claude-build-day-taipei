@@ -81,6 +81,13 @@ padding:16px 18px;transform:translateX(120%);transition:transform .5s cubic-bezi
 #coachBar .k{font:700 10px var(--mono);letter-spacing:.12em;color:var(--muted)}#coachBar .do{font:700 17px var(--mono);color:var(--amber)}#coachBar.wait .do{color:var(--cyan)}
 #coachBar .say{flex-basis:100%;font:13px/1.35 system-ui,sans-serif;color:var(--text)}#coachBar .say i{font-style:normal;color:var(--cyan);font:700 10px var(--mono);letter-spacing:.12em;margin-right:8px}
 #bAll{border-color:var(--red);color:#ffd0d5}
+button[data-zh]::after{content:attr(data-zh);display:block;font:500 10.5px system-ui,'PingFang TC',sans-serif;letter-spacing:.06em;color:var(--muted);margin-top:1px}
+button.on[data-zh]::after,button.hot[data-zh]::after{color:inherit;opacity:.85}#bAbort[data-zh]::after{color:#ffd0d5;letter-spacing:.2em}
+#macros{position:absolute;right:12px;bottom:34px;z-index:6;display:flex;gap:8px;align-items:stretch}
+#macros .mk{font:700 10px var(--mono);letter-spacing:.12em;color:var(--muted);align-self:center;margin-right:2px}
+#macros button{padding:8px 14px;font-size:12px;background:#0b1220e6;border-color:#33415f;min-width:118px;text-align:left}
+#macros button b{display:inline-block;width:20px;color:var(--amber)}#macros button.run{border-color:var(--amber);background:#2a1c08;color:var(--amber)}
+#macros #mac2{border-color:#7a2a33}#macros #mac2 b{color:var(--red)}
 dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;max-width:760px;width:90vw}
 dialog::backdrop{background:#000b}dialog pre{white-space:pre-wrap;font:12px/1.5 var(--mono);max-height:60vh;overflow:auto;margin:0 0 10px}
 @media(max-width:900px){main{grid-template-columns:1fr}body{overflow:auto}#standWrap{height:60vh}}
@@ -89,13 +96,13 @@ dialog::backdrop{background:#000b}dialog pre{white-space:pre-wrap;font:12px/1.5 
 <header>
  <h1>TEST STAND 91</h1>
  <span class="seg" id="engSeg"></span>
- <span class="seg" id="modeSeg"><button data-m="guided" class="on">GUIDED</button><button data-m="free">FREE</button></span>
+ <span class="seg" id="modeSeg"><button data-zh="引導模式" data-m="guided" class="on">GUIDED</button><button data-zh="自由操作" data-m="free">FREE</button></span>
  <span id="lamp" class="SAFE">SAFE</span>
  <span id="fps">– fps</span>
- <button id="bCoach" class="on">COACH ON</button><button id="bPrompt">SHOW THE PROMPT</button><button id="bAll">ALL RESET</button>
+ <button data-zh="按鍵教練" id="bCoach" class="on">COACH ON</button><button data-zh="看提示詞" id="bPrompt">SHOW THE PROMPT</button><button data-zh="全部重置" id="bAll">ALL RESET</button>
 </header>
 <main>
- <div id="standWrap"><div id="coachBar"><span class="k" id="coK"></span><span class="do" id="coDo"></span><span class="say" id="coSay"></span></div><canvas id="stand"></canvas><div id="fault"></div><div id="note"></div></div>
+ <div id="standWrap"><div id="macros"><span class="mk">AUTO DEMO 自動示範</span><button id="mac1" data-zh="正確點火 · 一次成功"><b>▶1</b>CLEAN START</button><button id="mac2" data-zh="主閥開太快 · 管路起火"><b>▶2</b>SNAP-OPEN VALVE</button><button id="mac3" data-zh="先給氧、後點火 · 硬啟動"><b>▶3</b>OXYGEN BEFORE FIRE</button></div><div id="coachBar"><span class="k" id="coK"></span><span class="do" id="coDo"></span><span class="say" id="coSay"></span></div><canvas id="stand"></canvas><div id="fault"></div><div id="note"></div></div>
  <aside>
   <div class="cell"><canvas id="gauges"></canvas></div>
   <div class="cell" id="reads">
@@ -121,27 +128,27 @@ dialog::backdrop{background:#000b}dialog pre{white-space:pre-wrap;font:12px/1.5 
 </main>
 <footer>
  <div id="console">
-  <button id="bHV3" data-code="HV3">HV3 MANUAL</button>
-  <button id="bARM" data-code="ARM">ARM KEY</button>
-  <button id="bIGN" data-code="IGN">IGNITER</button>
-  <button id="bMV" data-code="MV1">MAIN VALVE</button>
-  <label data-code="NV1">open time <input type="range" id="rMv" min="0.02" max="1" step="0.01" value="0.5"><b id="vMv">0.50 s</b></label>
-  <button id="bPV3" data-code="PV3">PURGE</button>
-  <button id="bPV1" data-code="PV1">VENT</button>
-  <label data-code="PR1">REG <input type="range" id="rReg" min="20" max="60" step="1" value="40"><b id="vReg">40 bar</b></label>
-  <label data-code="IP1">IP1 <select id="sInj"></select></label>
-  <span class="seg" id="tsSeg"><button data-ts="1" class="on">1×</button><button data-ts="0.25">¼×</button><button data-ts="0.05">1/20×</button></span>
-  <button id="bSnd">SOUND OFF</button>
-  <button id="bRegFail" data-code="PR1">FAULT: REGULATOR</button>
-  <button id="bPwr" data-code="PV1">FAULT: POWER CUT</button>
-  <button id="bReset">RESET</button>
-  <button id="bAbort" data-code="ABORT">ABORT</button>
+  <button data-zh="手動隔離閥" id="bHV3" data-code="HV3">HV3 MANUAL</button>
+  <button data-zh="保險鑰匙" id="bARM" data-code="ARM">ARM KEY</button>
+  <button data-zh="點火器" id="bIGN" data-code="IGN">IGNITER</button>
+  <button data-zh="主氧閥" id="bMV" data-code="MV1">MAIN VALVE</button>
+  <label data-code="NV1">主閥開啟時間 open time <input type="range" id="rMv" min="0.02" max="1" step="0.01" value="0.5"><b id="vMv">0.50 s</b></label>
+  <button data-zh="氮氣吹除" id="bPV3" data-code="PV3">PURGE</button>
+  <button data-zh="排氣閥" id="bPV1" data-code="PV1">VENT</button>
+  <label data-code="PR1">調壓 REG <input type="range" id="rReg" min="20" max="60" step="1" value="40"><b id="vReg">40 bar</b></label>
+  <label data-code="IP1">噴注孔板 IP1 <select id="sInj"></select></label>
+  <span class="seg" id="tsSeg"><button data-zh="正常速" data-ts="1" class="on">1×</button><button data-zh="慢動作" data-ts="0.25">¼×</button><button data-zh="超慢" data-ts="0.05">1/20×</button></span>
+  <button data-zh="聲音" id="bSnd">SOUND OFF</button>
+  <button data-zh="故障:調壓器壞掉" id="bRegFail" data-code="PR1">FAULT: REGULATOR</button>
+  <button data-zh="故障:斷電" id="bPwr" data-code="PV1">FAULT: POWER CUT</button>
+  <button data-zh="重置" id="bReset">RESET</button>
+  <button data-zh="緊急中止" id="bAbort" data-code="ABORT">ABORT</button>
  </div>
  <div id="seq"></div>
 </footer>
 <div id="card"><h4 id="cName"></h4><p id="cWhat"></p><p class="w" id="cWo"></p><small id="cCode"></small></div>
 <div id="report"><div class="code" id="rCode"></div><h2 id="rTitle"></h2><h5>WHAT HAPPENED</h5><p id="rHap"></p>
-<h5>THE NUMBER THAT CROSSED THE LINE</h5><p id="rNum"></p><h5>THE STEP THAT PREVENTS IT</h5><p id="rPrev"></p><button id="bReset2">RESET</button></div>
+<h5>THE NUMBER THAT CROSSED THE LINE</h5><p id="rNum"></p><h5>THE STEP THAT PREVENTS IT</h5><p id="rPrev"></p><button data-zh="重置" id="bReset2">RESET</button></div>
 <div id="coachRing"></div>
 <dialog id="dlg"><pre id="dlgPre"></pre><button id="bCopy">Copy</button> <button id="bClose">Close</button></dialog>
 <textarea id="promptText" hidden readonly>Build me an online rocket engine simulator: an interactive, visually stunning test stand where I operate a real engine start sequence, and where it can genuinely go wrong — it may refuse to light, it may chug, it may explode — all from first principles.
@@ -1035,8 +1042,8 @@ $("bReset").onclick=()=>reset();$("bReset2").onclick=()=>reset();
 function bindRange(id,out,f,show){const el=$(id),o=$(out);const u=()=>{const v=parseFloat(el.value);f(v);o.textContent=show(v);};el.oninput=u;u();}
 bindRange("rMv","vMv",v=>{C.mvTime=v;},v=>v.toFixed(2)+" s");bindRange("rReg","vReg",v=>{C.regSet=v*1e5;},v=>v.toFixed(0)+" bar");
 function bindSeg(id,attr,f){const seg=$(id);seg.onclick=e=>{const b=e.target.closest("button");if(!b)return;Array.prototype.forEach.call(seg.children,x=>x.classList.toggle("on",x===b));f(b.getAttribute(attr));};}
-(function(){const seg=$("engSeg");Object.keys(ENGINES).forEach((k,i)=>{const b=document.createElement("button");b.setAttribute("data-e",k);b.textContent=ENGINES[k].label;if(i===0)b.className="on";seg.appendChild(b);});
-  const r=document.createElement("button");r.setAttribute("data-e","random");r.textContent="⚄ RANDOM ENGINE";seg.appendChild(r);
+(function(){const seg=$("engSeg");Object.keys(ENGINES).forEach((k,i)=>{const b=document.createElement("button");b.setAttribute("data-e",k);b.textContent=ENGINES[k].label;b.setAttribute("data-zh",({ast91:"我們的真實引擎",conical:"錐形噴嘴",bell:"大鐘型噴嘴",kerolox:"液氧+煤油"})[k]||"");if(i===0)b.className="on";seg.appendChild(b);});
+  const r=document.createElement("button");r.setAttribute("data-e","random");r.textContent="⚄ RANDOM ENGINE";r.setAttribute("data-zh","隨機產生一顆");seg.appendChild(r);
   const sel=$("sInj");PARAMS.injOptions.forEach((o,i)=>{const op=document.createElement("option");op.value=i;op.textContent=o.label;sel.appendChild(op);});sel.onchange=()=>{C.injIdx=parseInt(sel.value,10);};})();
 bindSeg("engSeg","data-e",k=>{engKey=k;reset(k==="random"?randomEngine(seedCtr=(seedCtr*1103515245+12345)&0x7fffffff):ENGINES[k]);});
 bindSeg("modeSeg","data-m",m=>{mode=m;seqEl.style.opacity=m==="guided"?1:0.45;syncSteps();hint(m==="guided"?"Guided countdown: SPACE runs the next step.":"Free play: do anything in any order. ABORT is always live.");});
@@ -1104,6 +1111,8 @@ const COACH=(function(){
   function advance(){ti++;t0=performance.now();if(ti>=SCRIPTS[si].steps.length){si=(si+1)%SCRIPTS.length;ti=0;}}
   function tick(){
     bar.style.display=on?"flex":"none";if(!on){ring.style.display="none";return;}
+    if(window.__macro){const m=window.__macro;kEl.textContent="AUTO DEMO · "+m.name;doEl.textContent=m.txt||"";sayEl.innerHTML=m.say?"<i>SAY</i>":"";if(m.say)sayEl.appendChild(document.createTextNode(m.say));bar.className="";
+      const r0=m.target&&m.target.getBoundingClientRect();if(r0&&r0.width>0){ring.style.display="block";ring.className="";ring.style.left=(r0.left-6)+"px";ring.style.top=(r0.top-6)+"px";ring.style.width=(r0.width+12)+"px";ring.style.height=(r0.height+12)+"px";}else ring.style.display="none";return;}
     let st=cur(),guard=0;
     while(guard++<40){
       if(st.space!==undefined){ if(S.ending||stepIdx>st.space||mode!=="guided"&&false){ if(S.ending){ // an ending interrupts the guided run: jump to the reset step of this script
@@ -1135,6 +1144,50 @@ function allReset(){
 }
 $("bAll").onclick=allReset;
 window.addEventListener("keydown",e=>{if(e.target&&(e.target.tagName==="INPUT"||e.target.tagName==="SELECT"))return;if(e.key==="d"||e.key==="D")COACH.toggle();else if(e.key==="0")allReset();});
+
+/* ---- 13 Auto demos: three buttons that press the real controls in order (nothing is faked: they call the same handlers) ---- */
+const MACRO_LEAD=2600;
+const MACRO=(function(){
+  let timers=[],running=null;
+  function stop(){timers.forEach(clearTimeout);timers=[];window.__macro=null;if(running){running.classList.remove("run");running=null;}}
+  function setRange(id,v){const r=$(id);r.value=v;if(r.oninput)r.oninput();}
+  function modeBtn(m){const c=$("modeSeg").children;for(let i=0;i<c.length;i++)if(c[i].getAttribute("data-m")===m)return c[i];}
+  // step = [delay_ms_after_previous, targetElement|fn, action fn, zh+en caption, english say-line]
+  function play(btn,name,steps){
+    stop();reset();running=btn;btn.classList.add("run");let t=0;
+    steps.forEach(st=>{t+=st[0];timers.push(setTimeout(()=>{
+      if(S.ending&&!st[5])return;const tg=typeof st[1]==="function"?st[1]():st[1];
+      window.__macro={name:name,txt:st[3],say:st[4],target:tg};if(st[2])st[2]();},t));});
+    timers.push(setTimeout(()=>{window.__macro=null;if(running){running.classList.remove("run");running=null;}},t+2600));
+  }
+  const sp=(d,txt,say)=>[d,()=>stepEls[Math.min(stepIdx,stepEls.length-1)],()=>nextStep(),txt,say];
+  $("mac1").onclick=()=>play($("mac1"),"CLEAN START 正確點火",[
+    [50,()=>modeBtn("guided"),()=>modeBtn("guided").click(),"引導模式 GUIDED","The right way: the real start sequence."],
+    sp(350,"1 開手動閥 OPEN HV3","Open the manual valve."),sp(350,"2 氮氣吹除 PURGE ON","Purge with nitrogen."),
+    sp(2300,"3 關吹除 PURGE OFF",""),sp(350,"4 關排氣 CLOSE VENT","Close the vent."),sp(350,"5 最後確認 GO / NO-GO",""),
+    sp(350,"6 插保險鑰匙 ARM KEY","Arm."),sp(450,"7 點火器 IGNITER","Igniter first —"),sp(450,"8 室壓確認點著 Pc CONFIRMS","chamber pressure confirms it lit —"),
+    sp(450,"9 主氧閥慢開 MAIN VALVE RAMP","then oxygen, slowly."),
+    [900,()=>$("reads"),null,"燃燒中 · 看數字 BURNING","Chamber pressure, thrust, shock diamonds — computed live. The table checks the simulation against closed-form answers."],
+    sp(6200,"10 關機 SHUTDOWN","Shut down."),sp(400,"11 吹除 PURGE ON","Purge again."),sp(1500,"12 開排氣 VENT OPEN",""),sp(400,"13 拔鑰匙 KEY OUT","Key out. Clean run.")]);
+  $("mac2").onclick=()=>play($("mac2"),"SNAP-OPEN VALVE 主閥開太快",[
+    [50,()=>modeBtn("free"),()=>modeBtn("free").click(),"自由操作 FREE","Every valve has a reason. Here is one."],
+    [500,()=>$("rMv"),()=>setRange("rMv",0.02),"主閥開啟時間拉到最快 OPEN TIME → 0.02 s","I set the main valve to snap open."],
+    [900,()=>$("bHV3"),()=>$("bHV3").click(),"開手動閥 HV3",""],
+    [900,()=>$("bMV"),()=>$("bMV").click(),"開主氧閥 MAIN VALVE","Watch. Too fast."],
+    [700,()=>$("stand"),null,"不要講話 · 讓它燒","",1],
+    [3200,()=>$("rNum"),null,"讀事故卡上的數字","Oxygen slammed into an empty pipe. Adiabatic compression — over five hundred degrees. No spark needed. It killed three people in 2007.",1]]);
+  $("mac3").onclick=()=>play($("mac3"),"OXYGEN BEFORE FIRE 先給氧後點火",[
+    [50,()=>modeBtn("free"),()=>modeBtn("free").click(),"自由操作 FREE","Second mistake: the order."],
+    [400,()=>$("bPV1"),()=>{if(C.vent)$("bPV1").click();},"關排氣閥 CLOSE VENT",""],
+    [500,()=>$("bHV3"),()=>$("bHV3").click(),"開手動閥 HV3",""],
+    [500,()=>$("bMV"),()=>$("bMV").click(),"先開主氧閥 MAIN VALVE FIRST","Oxygen first. The chamber fills with oxygen and nothing is burning."],
+    [MACRO_LEAD,()=>$("bARM"),()=>$("bARM").click(),"插鑰匙 ARM",""],
+    [400,()=>$("bIGN"),()=>$("bIGN").click(),"現在才點火 IGNITER LATE","Now the igniter — late."],
+    [900,()=>$("stand"),null,"硬啟動 HARD START","",1],
+    [2600,()=>$("rNum"),null,"讀事故卡上的數字","Everything lit at once: a hard start. Fire first, then oxygen — never the other way round.",1]]);
+  return {stop:stop};
+})();
+$("bReset").addEventListener("click",()=>MACRO.stop());$("bReset2").addEventListener("click",()=>MACRO.stop());$("bAll").addEventListener("click",()=>MACRO.stop());$("bAbort").addEventListener("click",()=>MACRO.stop());
 reset(ENGINES.ast91);
 requestAnimationFrame(frame);
 }
