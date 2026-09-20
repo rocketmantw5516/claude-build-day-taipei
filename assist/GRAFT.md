@@ -1,3 +1,26 @@
+# TRIAL RESULT (18:54) — grafts 1, fx paste, 3, 4, 2 are PROVEN on a copy
+
+Applied to `assist/trial/a-grafted.html` (copy of out/a.html 81082 B) in the order 1 -> fx.js inline -> 3 -> 4 -> 2 (audio.js inline); `qa.sh` load mode after every step: PROBLEMS 0, 61 fps each time. Final: `--all` 0 problems, `--guided=14` 0 problems. `assist/shots/a-grafted-g09.png` (FIRING, 295 N, Pc 10.8 bar) viewed: target plume + diamonds intact, heat-haze streaks visible above the plume, engine/labels undamaged, 60 fps. Not proven by eye: the explosion/misfire visuals and the sound (headless) — they run without errors through `--interact` (which clicks every button incl. faults), nothing more is claimed. Graft 5 (kit plume) NOT tried — still "skip unless idle".
+
+**engine.html now exists and has diverged from a.html** (96035 B, mtime 18:52:08, md5 3ed5e1bc174687d45b7d86246590344c; it already has rAF-first and no `bCopy` clipboard line). So there are two ways to apply, both tested:
+
+1. **One command, if engine.html is still md5 3ed5e1bc…:**
+   `cp engine.html /tmp/engine.pre-graft.html && patch engine.html < assist/trial/engine-grafted.patch`
+   (verified: patch applies cleanly and reproduces `assist/trial/engine-grafted.html`, which passes `qa.sh --all` with 0 problems). Or simply `cp assist/trial/engine-grafted.html engine.html`.
+2. **If engine.html changed again:** the anchored script survives drift (it matched on the 96 KB engine.html where the a.html patch had 3/10 hunks rejected):
+   `cp engine.html /tmp/engine.pre-graft.html; for st in fx 3 4 2; do python3 assist/trial/apply.py $st $PWD/engine.html || break; done; assist/qa.sh engine.html --all`
+   Each step asserts its anchor occurs exactly once and writes nothing on failure (AssertionError = that step not applied; steps `1` and `clip` fail on engine.html because the main line already did them — expected). Step `2` depends on step `fx` (it anchors on the `const fxDrawPlume=drawPlume;` line).
+   `assist/trial/a-grafted.patch` = diff vs out/a.html, only useful for a file identical to a.html.
+
+Where reality differed from the plan below:
+- Nothing in the graft snippets needed changing; all anchors, variables (`FXE`, `x,y` in startEnding, `dt`, `tNow`, `NOZ`, `eng.designPc_bar`, `S.oxD`, `S.qFuel`, `S.chugAmp`) exist as written. No new name collisions appeared (kit `drawPlume`/`audioInit` shadowing handled as described).
+- Line numbers below are for a.html ONLY. In engine.html everything is shifted (frame() is at L1055, not L840) — use the function names / anchor strings, or apply.py.
+- Extra fix found by QA, pre-existing in a.html (not caused by grafts): `#bCopy` handler threw an unhandled `NotAllowedError` from `clipboard.writeText` (`--interact` reported 1 problem on the untouched a.html too). Fixed in the a.html trial copy with try + `.catch(()=>{})` (apply.py step `clip`). engine.html no longer has that line.
+- File grows by ~45 KB (fx.js 31 KB + audio.js 13 KB inline); fps unchanged at 61.
+- Rollback: `cp /tmp/engine.pre-graft.html engine.html`.
+
+---
+
 # GRAFT — kits (assist/fx.js, audio.js, ui-kit.html) into the simulator
 
 **Target read:** `/Users/frankchen/claude_taipei/out/a.html` — 81082 bytes, 858 lines, mtime Sep 20 18:42:17 2026.
