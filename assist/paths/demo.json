@@ -1,0 +1,23 @@
+[
+ {"click":"#modeSeg [data-m=free]"},
+ {"range":["#rMv","min"]},
+ {"mark":"ADIABATIC path"},
+ {"click":"#bHV3"},
+ {"wait":300},
+ {"click":"#bMV"},
+ {"waitFor":"S.ending","label":"S.ending set","timeout":8000},
+ {"eval":"JSON.stringify(S.ending)"},
+ {"wait":100},{"shot":"boom1"},{"wait":400},{"shot":"boom2"},
+ {"waitFor":"/show/.test(document.querySelector('#report').className)","label":"incident card visible","timeout":8000},
+ {"wait":700},{"shot":"card"},
+ {"eval":"document.querySelector('#report').innerText","label":"card text"},
+ {"mark":"R then Space"},
+ {"key":"R"},{"wait":300},
+ {"eval":"JSON.stringify({ending:S.ending,frozen:S.frozen,report:document.querySelector('#report').className,mode:document.querySelector('#modeSeg .on').textContent,mv:document.querySelector('#rMv').value})","label":"after R"},
+ {"spaceUntil":"S.lit","label":"FIRING (S.lit)","gap":700,"timeout":40000},
+ {"wait":1200},{"shot":"firing"},
+ {"spaceUntil":"S.ending","label":"ending after firing","gap":700,"timeout":60000},
+ {"eval":"JSON.stringify(S.ending)"},
+ {"wait":1500},{"shot":"clean"},
+ {"eval":"document.querySelector('#report').innerText","label":"card text"}
+]

@@ -1,0 +1,1 @@
+[{"mark": "HARD_START"}, {"click": "#modeSeg [data-m=free]"}, {"range": ["#rMv", "max"]}, {"click": "#bHV3"}, {"click": "#bPV1"}, {"click": "#bMV"}, {"wait": 2500}, {"click": "#bARM"}, {"click": "#bIGN"}, {"waitFor": "S.ending", "label": "ending", "timeout": 45000}, {"eval": "S.ending&&S.ending.code", "label": "ENDING"}]

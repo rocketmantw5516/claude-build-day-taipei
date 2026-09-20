@@ -1,0 +1,1 @@
+[{"mark": "POWER_CUT_firing"}, {"click": "#modeSeg [data-m=free]"}, {"click": "#bHV3"}, {"click": "#bPV1"}, {"click": "#bARM"}, {"click": "#bIGN"}, {"wait": 600}, {"click": "#bMV"}, {"wait": 3000}, {"click": "#bPwr"}, {"waitFor": "S.ending", "label": "ending", "timeout": 45000}, {"eval": "S.ending&&S.ending.code", "label": "ENDING"}]

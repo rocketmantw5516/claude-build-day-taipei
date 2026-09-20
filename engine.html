@@ -1672,7 +1672,7 @@ B.snd.onclick=()=>{muted=!muted;if(!muted){audioInit();if(actx&&actx.state==="su
 $("bPrompt").onclick=()=>{$("dlgPre").textContent=$("promptText").value;$("dlg").showModal();};$("bClose").onclick=()=>$("dlg").close();
 $("bCopy").onclick=()=>{const ta=$("promptText");const fb=()=>{try{ta.select();document.execCommand("copy");}catch(e){}};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(ta.value).catch(fb);else fb();};
 window.addEventListener("keydown",e=>{if(e.target&&(e.target.tagName==="INPUT"||e.target.tagName==="SELECT"))return;if($("dlg").open)return;
-  if(e.code==="Space"){e.preventDefault();nextStep();}else if(e.key==="a"||e.key==="A")ACT.ABORT();else if(e.key==="r"||e.key==="R")reset();else if(e.key==="s"||e.key==="S")B.snd.onclick();});
+  if(e.code==="Space"){e.preventDefault();if(mode!=="guided"&&!S.frozen){const c=$("modeSeg").children;for(let i=0;i<c.length;i++)if(c[i].getAttribute("data-m")==="guided")c[i].click();}nextStep();}else if(e.key==="a"||e.key==="A")ACT.ABORT();else if(e.key==="r"||e.key==="R")reset();else if(e.key==="s"||e.key==="S")B.snd.onclick();});
 // teaching cards
 const card=$("card");let cardCode="";
 function showCard(code,px,py){const cd=CARDS[code];if(!cd){hideCard();return;}

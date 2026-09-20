@@ -1,0 +1,1 @@
+[{"mark": "CHUG"}, {"click": "#modeSeg [data-m=free]"}, {"select": ["#sInj", -1]}, {"click": "#bHV3"}, {"click": "#bPV1"}, {"click": "#bARM"}, {"click": "#bIGN"}, {"wait": 600}, {"click": "#bMV"}, {"waitFor": "S.ending", "label": "ending", "timeout": 45000}, {"eval": "S.ending&&S.ending.code", "label": "ENDING"}]

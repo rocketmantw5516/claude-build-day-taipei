@@ -1,0 +1,1 @@
+[{"mark": "POWER_CUT"}, {"click": "#modeSeg [data-m=free]"}, {"click": "#bHV3"}, {"click": "#bPwr"}, {"waitFor": "S.ending", "label": "ending", "timeout": 45000}, {"eval": "S.ending&&S.ending.code", "label": "ENDING"}]

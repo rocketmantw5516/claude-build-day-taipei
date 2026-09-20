@@ -1,0 +1,15 @@
+[
+ {"click":"#modeSeg [data-m=free]"},{"range":["#rMv","min"]},{"click":"#bHV3"},{"wait":300},{"click":"#bMV"},
+ {"waitFor":"/show/.test(document.querySelector('#report').className)","timeout":8000},
+ {"mark":"R, click GUIDED, then Space"},
+ {"key":"R"},{"wait":200},{"click":"#modeSeg [data-m=guided]"},
+ {"eval":"JSON.stringify({mv:document.querySelector('#rMv').value,hv3:C.hv3,mvTime:C.mvTime})","label":"state after R"},
+ {"spaceUntil":"S.lit","label":"FIRING (S.lit)","gap":700,"timeout":40000},
+ {"eval":"S.ending&&S.ending.code","label":"ending at this point"},
+ {"wait":1500},{"shot":"firing"},
+ {"eval":"JSON.stringify({t:S.t,Pc:S.Pc,F:NOZ.F,rows:[...document.querySelectorAll('#verify tr, .vrow')].length})","label":"firing state"},
+ {"spaceUntil":"S.ending","label":"ending","gap":700,"timeout":60000},
+ {"eval":"JSON.stringify(S.ending)"},
+ {"waitFor":"/show/.test(document.querySelector('#report').className)","label":"report card","timeout":8000},
+ {"wait":600},{"shot":"clean"}
+]
