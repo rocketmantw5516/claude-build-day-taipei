@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>FX preview — assist/fx.js</title>
+<style>
+  :root{--bg:#070a12;--panel:#101725;--line:#232d44;--text:#e9eef7;--muted:#8b98b2;--amber:#ffb347}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:13px system-ui,sans-serif}
+  body{display:grid;grid-template-rows:auto 1fr}
+  #bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+  #bar label{display:flex;gap:6px;align-items:center;color:var(--muted);font-family:"SF Mono",Menlo,Consolas,monospace;font-size:11px}
+  #bar output{color:var(--amber);min-width:34px;display:inline-block}
+  input[type=range]{width:110px;accent-color:var(--amber)}
+  button,select{background:#0c111c;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 12px;font:inherit;cursor:pointer}
+  button:hover{border-color:var(--amber)}
+  canvas{display:block;width:100%;height:100%}
+</style></head><body>
+<div id="bar">
+  <b>FX PREVIEW</b>
+  <label>mach <input id="mach" type="range" min="1.1" max="4.5" step="0.05" value="2.6"><output></output></label>
+  <label>Pe/Pa <input id="pr" type="range" min="0.1" max="4" step="0.02" value="0.7"><output></output></label>
+  <label>thrust01 <input id="th" type="range" min="0" max="1" step="0.01" value="0.9"><output></output></label>
+  <label>flow01 <input id="fl" type="range" min="-1" max="1" step="0.01" value="0.6"><output></output></label>
+  <label>open01 <input id="op" type="range" min="0" max="1" step="0.01" value="0.3"><output></output></label>
+  <label>gauge <input id="gv" type="range" min="0" max="60" step="0.1" value="32"><output></output></label>
+  <label>fluid <select id="fluid"><option>gox</option><option>n2</option><option>lox</option><option>kerosene</option><option>hot</option><option>vent</option></select></label>
+  <label><input id="hot" type="checkbox"> hot</label>
+  <label><input id="shake" type="checkbox" checked> shake</label>
+  <label><input id="haze" type="checkbox" checked> haze</label>
+  <button id="boom">Explode</button><button id="mis">Misfire</button>
+  <span id="fps" style="margin-left:auto;color:var(--muted);font-family:Menlo,monospace"></span>
+</div>
+<canvas id="c"></canvas>
+<script src="fx.js"></script>
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const $ = id => document.getElementById(id);
+const P = { mach: 2.6, pr: 0.7, th: 0.9, fl: 0.6, op: 0.3, gv: 32 };
+for (const k of Object.keys(P)) {
+  const el = $(k), out = el.parentNode.querySelector('output');
+  const f = () => { P[k] = +el.value; out.textContent = (+el.value).toFixed(2); };
+  el.addEventListener('input', f); f();
+}
+let W = 0, H = 0, dpr = 1;
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+}
+addEventListener('resize', resize); resize();
+
+const boom = fxExplosionCreate(), mis = fxMisfireCreate();
+$('boom').onclick = () => { boom.groundY = H * 0.47; fxExplosionStart(boom, W * 0.78, H * 0.30); };
+$('mis').onclick = () => fxMisfireStart(mis, 150, H * 0.24);
+
+const FLUIDS = ['gox', 'n2', 'lox', 'kerosene', 'hot', 'vent'];
+const pipes = FLUIDS.map((f, i) => [[40, 0], [200, 0], [200, 0], [400, 0]]);   // filled in layout()
+const selPipe = [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0]];
+const KINDS = ['manual', 'pneumatic', 'pneumatic', 'check', 'relief', 'burstDisc'];
+let glow = 0, lastOp = -1, shown = 0, phase = 0, last = performance.now(), fpsT = 0, fpsN = 0;
+
+function label(txt, x, y) { ctx.fillStyle = FX_PAL.muted; ctx.font = '11px ' + FX_PAL.mono; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(txt, x, y); }
+function nozzle(x, y, exitR, bellLen) {            // simple bell silhouette for context
+  ctx.strokeStyle = FX_PAL.metal; ctx.lineWidth = 6; ctx.lineCap = 'round';
+  for (let s = -1; s <= 1; s += 2) {
+    ctx.beginPath(); ctx.moveTo(x - bellLen - 50, y + s * 30); ctx.lineTo(x - bellLen - 18, y + s * 30);
+    ctx.quadraticCurveTo(x - bellLen - 6, y + s * 12, x - bellLen, y + s * 12);
+    ctx.quadraticCurveTo(x - bellLen * 0.6, y + s * exitR * 0.85, x, y + s * (exitR + 3)); ctx.stroke();
+  }
+}
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const t = now / 1000;
+  fpsT += dt; fpsN++; if (fpsT > 0.5) { $('fps').textContent = Math.round(fpsN / fpsT) + ' fps'; fpsT = 0; fpsN = 0; }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = FX_PAL.bg; ctx.fillRect(0, 0, W, H);
+
+  // 1. plume
+  label('1  drawPlume — mach / Pe/Pa / thrust01   (Pe/Pa < 0.4 → flow separation inside the bell)', 20, 24);
+  const ex = 250, ey = H * 0.24, exitR = 36, bellLen = 95;
+  ctx.save();
+  if ($('shake').checked) { const sh = fxShake(P.th, t); ctx.translate(sh.dx, sh.dy); }
+  drawPlume(ctx, { x: ex, y: ey, exitR, bellLen, mach: P.mach, peOverPa: P.pr, thrust01: P.th, t });
+  nozzle(ex, ey, exitR, bellLen);
+  ctx.restore();
+  if ($('haze').checked) drawHeatHaze(ctx, { x: ex - 20, y: ey - 190, w: 720, h: 190, intensity01: P.th, t });
+  fxMisfireDraw(ctx, mis, dt);
+
+  // 3. pipes
+  const py0 = H * 0.52;
+  label('3  drawPipeFlow — one per fluid, plus a bent run in the selected fluid', 20, py0 - 14);
+  for (let i = 0; i < FLUIDS.length; i++) {
+    const y = py0 + 8 + i * 20, p = pipes[i];
+    p[0][1] = p[1][1] = y; p[2][1] = p[3][1] = y; p[1][0] = p[2][0] = 220; p[3][0] = 420;
+    drawPipeFlow(ctx, p, { flow01: P.fl, fluid: FLUIDS[i], t });
+    label(FLUIDS[i], 430, y + 4);
+  }
+  phase += P.fl * 140 * dt;
+  const bx = 520, by = py0 + 10;
+  selPipe[0][0] = bx; selPipe[0][1] = by; selPipe[1][0] = bx + 120; selPipe[1][1] = by;
+  selPipe[2][0] = bx + 120; selPipe[2][1] = by + 90; selPipe[3][0] = bx + 300; selPipe[3][1] = by + 90;
+  selPipe[4][0] = bx + 300; selPipe[4][1] = by + 20;
+  drawPipeFlow(ctx, selPipe, { flow01: P.fl, fluid: $('fluid').value, phase, width: 10 });
+  drawValve(ctx, bx + 210, by + 90, { kind: 'pneumatic', open01: Math.abs(P.fl), failSafe: 'NC', hot: $('hot').checked, label: 'MV1' });
+  drawValve(ctx, bx + 120, by + 45, { kind: 'manual', open01: P.op, angle: Math.PI / 2, size: 12 });
+
+  // 4. valves + gauges
+  const vy = H * 0.84;
+  label('4  drawValve — open01 / hot', 20, vy - 58);
+  if (lastOp >= 0 && Math.abs(P.op - lastOp) > 0.001) glow = 1;
+  lastOp = P.op; glow *= Math.exp(-dt * 6);
+  for (let i = 0; i < KINDS.length; i++) {
+    const x = 60 + i * 95;
+    ctx.strokeStyle = FX_PAL.line; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x - 38, vy); ctx.lineTo(x + 38, vy); ctx.stroke();
+    drawValve(ctx, x, vy, { kind: KINDS[i], open01: P.op, failSafe: i === 2 ? 'NO' : 'NC', hot: $('hot').checked, glow, label: KINDS[i] + (i === 1 ? ' NC' : i === 2 ? ' NO' : '') });
+  }
+  shown += (P.gv - shown) * (1 - Math.exp(-dt * 9));
+  label('4  drawGauge — caller smooths the value', W * 0.62, vy - 78);
+  drawGauge(ctx, W * 0.66, vy - 8, 56, { value: shown, max: 60, redline: 45, label: 'CHAMBER', unit: 'bar' });
+  drawGauge(ctx, W * 0.66 + 140, vy - 8, 44, { value: shown * 3.3, max: 200, redline: 170, label: 'BOTTLE', unit: 'bar' });
+  drawGauge(ctx, W * 0.66 + 250, vy - 8, 32, { value: NaN, max: 10, redline: 8, label: 'PT4', unit: 'bar' });
+
+  // 2. explosion (drawn last: flash covers everything)
+  label('2  fxExplosion* / fxMisfire* — use the buttons', W * 0.62, 24);
+  ctx.strokeStyle = FX_PAL.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(W * 0.55, H * 0.47); ctx.lineTo(W - 20, H * 0.47); ctx.stroke();
+  fxExplosionDraw(ctx, boom, dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+// test hooks: fx-preview.html#boom  and/or  #pr=0.2,mach=3  (comma separated)
+for (const part of location.hash.slice(1).split(',')) {
+  const kv = part.split('=');
+  if (kv[0] === 'boom') setTimeout(() => { $('boom').click(); $('mis').click(); }, 3300);
+  else if (kv[0] in P) { $(kv[0]).value = kv[1]; $(kv[0]).dispatchEvent(new Event('input')); }
+}
+</script></body></html>

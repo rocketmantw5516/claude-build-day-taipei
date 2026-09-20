@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audio Kit Preview</title>
+<style>
+  :root { --bg:#070a12; --panel:#101725; --panel2:#0c111c; --line:#232d44; --text:#e9eef7; --muted:#8b98b2;
+          --amber:#ffb347; --flame:#ff7a1a; --cyan:#5fd3ff; --green:#6ee7a0; --red:#ff5c6c; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding:24px 16px; }
+  main { max-width:640px; margin:0 auto; }
+  h1 { font-size:16px; letter-spacing:.14em; text-transform:uppercase; color:var(--amber); margin:0 0 4px; }
+  p.sub { color:var(--muted); margin:0 0 16px; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:12px; }
+  h2 { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:0 0 12px; font-weight:600; }
+  button { font:inherit; color:var(--text); background:var(--panel2); border:1px solid var(--line); border-radius:6px; padding:9px 14px; cursor:pointer; letter-spacing:.06em; }
+  button:hover { border-color:var(--cyan); }
+  button:active { transform:translateY(1px); }
+  #start { background:var(--flame); border-color:var(--flame); color:#130800; font-weight:700; }
+  #mute.on { border-color:var(--red); color:var(--red); }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .sl { display:grid; grid-template-columns:70px 1fr 44px; gap:10px; align-items:center; margin-bottom:8px; }
+  .sl label { color:var(--cyan); }
+  .sl output { text-align:right; color:var(--amber); font-variant-numeric:tabular-nums; }
+  input[type=range] { width:100%; accent-color:var(--flame); }
+  #scope { display:block; width:100%; height:90px; margin-top:12px; background:var(--panel2); border:1px solid var(--line); border-radius:6px; }
+  #status { color:var(--muted); margin-top:12px; }
+  #status b { color:var(--green); font-weight:600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Audio Kit Preview</h1>
+  <p class="sub">audio.js &mdash; roar synth + one-shots. Press START first (browser needs a gesture).</p>
+
+  <section>
+    <h2>Power</h2>
+    <div class="row">
+      <button id="start" type="button">START AUDIO</button>
+      <button id="mute" type="button" class="on">MUTED</button>
+    </div>
+    <canvas id="scope" width="600" height="90"></canvas>
+    <div id="status">status: <b id="path">not started</b> &middot; ctx <span id="ctxs">-</span></div>
+  </section>
+
+  <section>
+    <h2>Roar state</h2>
+    <div class="sl"><label for="pc">pc01</label><input id="pc" type="range" min="0" max="1" step="0.01" value="0"><output id="pcv">0.00</output></div>
+    <div class="sl"><label for="mdot">mdot01</label><input id="mdot" type="range" min="0" max="1" step="0.01" value="0"><output id="mdotv">0.00</output></div>
+    <div class="sl"><label for="chug">chug01</label><input id="chug" type="range" min="0" max="1" step="0.01" value="0"><output id="chugv">0.00</output></div>
+  </section>
+
+  <section>
+    <h2>One-shots</h2>
+    <div class="row" id="shots"></div>
+  </section>
+</main>
+
+<script src="audio.js"></script>
+<script>
+(function () {
+  function $(id) { return document.getElementById(id); }
+  var muted = true;
+  function refresh() {
+    $('path').textContent = (typeof audioPath === 'function') ? audioPath() : 'audio.js missing';
+    $('ctxs').textContent = (window._AK && _AK.ctx) ? _AK.ctx.state : '-';
+    $('mute').textContent = muted ? 'MUTED' : 'SOUND ON';
+    $('mute').classList.toggle('on', muted);
+  }
+  function push() {
+    var s = { pc01: +$('pc').value, mdot01: +$('mdot').value, chug01: +$('chug').value };
+    $('pcv').textContent = s.pc01.toFixed(2);
+    $('mdotv').textContent = s.mdot01.toFixed(2);
+    $('chugv').textContent = s.chug01.toFixed(2);
+    if (typeof audioSet === 'function') audioSet(s);
+  }
+  $('start').addEventListener('click', function () {
+    if (typeof audioInit !== 'function') { refresh(); return; }
+    $('path').textContent = 'starting...';
+    audioInit().then(function () { muted = false; audioMute(false); push(); refresh(); });
+  });
+  $('mute').addEventListener('click', function () {
+    muted = !muted;
+    if (typeof audioMute === 'function') audioMute(muted);
+    refresh();
+  });
+  ['pc', 'mdot', 'chug'].forEach(function (id) {
+    $(id).addEventListener('input', push);
+    $(id).addEventListener('change', push);
+  });
+  ['igniter', 'valve', 'relief', 'explosion', 'misfire', 'klaxon'].forEach(function (n) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = n;
+    b.addEventListener('click', function () { if (typeof audioOneShot === 'function') audioOneShot(n); refresh(); });
+    $('shots').appendChild(b);
+  });
+  // output scope: taps the limiter output through an AnalyserNode once audio is up
+  var an = null, data = null, cv = $('scope'), g2 = cv.getContext('2d');
+  function draw() {
+    requestAnimationFrame(draw);
+    if (!an && window._AK && _AK.ready && _AK.limiter) {
+      try { an = _AK.ctx.createAnalyser(); an.fftSize = 1024; data = new Float32Array(an.fftSize); _AK.limiter.connect(an); } catch (e) { an = null; }
+    }
+    var w = cv.width, h = cv.height;
+    g2.clearRect(0, 0, w, h);
+    g2.strokeStyle = '#232d44'; g2.beginPath(); g2.moveTo(0, h / 2); g2.lineTo(w, h / 2); g2.stroke();
+    if (!an) return;
+    an.getFloatTimeDomainData(data);
+    g2.strokeStyle = '#ffb347'; g2.beginPath();
+    for (var i = 0; i < data.length; i++) {
+      var x = i / (data.length - 1) * w, y = h / 2 - data[i] * h / 2;
+      if (i === 0) g2.moveTo(x, y); else g2.lineTo(x, y);
+    }
+    g2.stroke();
+  }
+  draw();
+  setInterval(refresh, 500);
+  refresh();
+  // audio-preview.html#autostart : headless self-test hook (browsers may still require a gesture to un-suspend)
+  if (/fallback/.test(location.hash)) _AK.forceFallback = true;   // #fallback forces the ScriptProcessor path
+  if (location.hash === '#autostart') $('start').click();
+})();
+</script>
+</body>
+</html>

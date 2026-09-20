@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test-stand UI kit</title>
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║ TK-KIT  BLOCK 1/3 : STYLE   (copy everything between the markers) ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<style id="tk-style">
+/* ==== TK STYLE BEGIN ==== */
+:root{
+  --tk-bg:#070a12; --tk-panel:#101725; --tk-panel2:#0c111c; --tk-line:#232d44;
+  --tk-text:#e9eef7; --tk-muted:#8b98b2;
+  --tk-amber:#ffb347; --tk-flame:#ff7a1a; --tk-cyan:#5fd3ff; --tk-green:#6ee7a0; --tk-red:#ff5c6c;
+  --tk-sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+  --tk-mono:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+}
+.tk-btn{font:600 12px/1 var(--tk-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--tk-text);
+  background:var(--tk-panel2);border:1px solid var(--tk-line);border-radius:6px;padding:9px 14px;cursor:pointer;
+  transition:border-color .15s,background .15s,color .15s}
+.tk-btn:hover{border-color:var(--tk-cyan);color:var(--tk-cyan)}
+.tk-btn:focus-visible{outline:2px solid var(--tk-cyan);outline-offset:2px}
+.tk-btn-primary{background:var(--tk-amber);border-color:var(--tk-amber);color:#1a1205}
+.tk-btn-primary:hover{background:#ffc570;color:#1a1205;border-color:#ffc570}
+
+/* 1 ── PROMPT dialog */
+.tk-prompt{width:min(820px,92vw);max-height:84vh;padding:0;border:1px solid var(--tk-line);border-radius:12px;
+  background:var(--tk-panel);color:var(--tk-text);font-family:var(--tk-sans);box-shadow:0 30px 90px rgba(0,0,0,.7);overflow:hidden}
+.tk-prompt[open]{display:flex;flex-direction:column;animation:tk-pop .18s ease-out}
+.tk-prompt::backdrop{background:rgba(4,6,12,.72);backdrop-filter:blur(3px)}
+.tk-prompt-head{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--tk-line)}
+.tk-prompt-title{font:700 12px/1 var(--tk-mono);letter-spacing:.16em;color:var(--tk-amber);margin-right:auto}
+.tk-prompt-body{margin:0;padding:18px;overflow:auto;flex:1;min-height:120px;max-height:62vh;white-space:pre-wrap;word-break:break-word;
+  font:12.5px/1.6 var(--tk-mono);color:#cfd8ea;background:var(--tk-panel2)}
+.tk-prompt-foot{padding:10px 18px;border-top:1px solid var(--tk-line);font-size:11.5px;color:var(--tk-muted)}
+.tk-copied{border-color:var(--tk-green)!important;color:var(--tk-green)!important;background:rgba(110,231,160,.1)!important}
+@keyframes tk-pop{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:none}}
+
+/* 2 ── Teaching card */
+.tk-card{position:fixed;left:0;top:0;z-index:60;width:300px;pointer-events:none;opacity:0;visibility:hidden;
+  transition:opacity .12s,visibility .12s;background:rgba(16,23,37,.96);border:1px solid var(--tk-line);border-left:3px solid var(--tk-cyan);
+  border-radius:8px;padding:12px 14px;font-family:var(--tk-sans);color:var(--tk-text);box-shadow:0 14px 40px rgba(0,0,0,.55);will-change:transform}
+.tk-card.tk-on{opacity:1;visibility:visible}
+.tk-card-name{font:700 12.5px/1.3 var(--tk-mono);letter-spacing:.06em;color:var(--tk-cyan);margin-bottom:6px}
+.tk-card-what{font-size:13px;line-height:1.45;margin-bottom:8px}
+.tk-card-label{font:700 9.5px/1 var(--tk-mono);letter-spacing:.16em;color:var(--tk-red);margin-bottom:4px}
+.tk-card-without{font-size:12.5px;line-height:1.45;color:#f3c7cc}
+
+/* 3 ── Incident report card + frozen stage */
+.tk-freezable{transition:filter .9s ease}
+.tk-frozen{filter:grayscale(1) brightness(.62) contrast(1.05)}
+.tk-incident{position:absolute;top:0;right:0;bottom:0;z-index:40;width:min(400px,86%);display:flex;flex-direction:column;gap:12px;
+  padding:22px 22px 20px;background:linear-gradient(180deg,rgba(28,12,18,.97),rgba(12,17,28,.97));
+  border-left:3px solid var(--tk-red);box-shadow:-24px 0 60px rgba(0,0,0,.6);color:var(--tk-text);font-family:var(--tk-sans);
+  transform:translateX(105%);visibility:hidden;transition:transform .45s cubic-bezier(.2,.85,.25,1),visibility 0s .45s;overflow:auto}
+.tk-incident.tk-on{transform:none;visibility:visible;transition:transform .45s cubic-bezier(.2,.85,.25,1),visibility 0s}
+.tk-incident-kicker{font:700 10.5px/1 var(--tk-mono);letter-spacing:.2em;color:var(--tk-red)}
+.tk-incident-title{font:800 23px/1.15 var(--tk-sans);margin:0}
+.tk-incident-label{font:700 9.5px/1 var(--tk-mono);letter-spacing:.16em;color:var(--tk-muted);margin-bottom:5px}
+.tk-incident-text{font-size:13.5px;line-height:1.5}
+.tk-incident-number{font:700 19px/1.25 var(--tk-mono);color:var(--tk-red);padding:10px 12px;border:1px solid rgba(255,92,108,.35);
+  border-radius:8px;background:rgba(255,92,108,.08)}
+.tk-incident-reset{margin-top:auto;align-self:stretch;padding:14px;font-size:14px;border-color:var(--tk-red);color:var(--tk-red)}
+.tk-incident-reset:hover{background:rgba(255,92,108,.12);border-color:var(--tk-red);color:var(--tk-red)}
+.tk-incident.tk-ok{background:linear-gradient(180deg,rgba(10,28,20,.97),rgba(12,17,28,.97));border-left-color:var(--tk-green)}
+.tk-incident.tk-ok .tk-incident-kicker,.tk-incident.tk-ok .tk-incident-number{color:var(--tk-green)}
+.tk-incident.tk-ok .tk-incident-number{border-color:rgba(110,231,160,.35);background:rgba(110,231,160,.08)}
+.tk-incident.tk-ok .tk-incident-reset{border-color:var(--tk-green);color:var(--tk-green)}
+.tk-incident.tk-ok .tk-incident-reset:hover{background:rgba(110,231,160,.12)}
+
+/* 4 ── Verification ledger */
+.tk-ledger{display:flex;flex-direction:column;gap:6px;font-family:var(--tk-sans)}
+.tk-led-row{position:relative;display:grid;grid-template-columns:10px 1fr auto;align-items:center;column-gap:10px;row-gap:3px;
+  padding:9px 12px 10px;border:1px solid var(--tk-line);border-radius:8px;background:var(--tk-panel2);transition:border-color .3s,background .3s}
+.tk-led-dot{width:8px;height:8px;border-radius:50%;background:var(--tk-line);transition:background .3s,box-shadow .3s}
+.tk-led-label{font-size:12.5px;color:var(--tk-text)}
+.tk-led-status{font:700 10.5px/1 var(--tk-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--tk-muted)}
+.tk-led-val{grid-column:2/4;font:12px/1.3 var(--tk-mono);color:var(--tk-muted);min-height:15px}
+.tk-led-bar{position:absolute;left:0;right:0;bottom:0;height:2px;background:transparent;border-radius:0 0 8px 8px;overflow:hidden}
+.tk-led-bar>i{display:block;height:100%;width:100%;background:var(--tk-cyan);transform:scaleX(0);transform-origin:left;transition:transform .12s linear,opacity .3s}
+.tk-led-row.tk-measuring{border-color:rgba(95,211,255,.45)}
+.tk-led-row.tk-measuring .tk-led-dot{background:var(--tk-cyan);box-shadow:0 0 8px var(--tk-cyan);animation:tk-blink .8s infinite}
+.tk-led-row.tk-measuring .tk-led-status{color:var(--tk-cyan)}
+.tk-led-row.tk-pass{border-color:rgba(110,231,160,.5);background:rgba(110,231,160,.06)}
+.tk-led-row.tk-pass .tk-led-dot{background:var(--tk-green);box-shadow:0 0 8px var(--tk-green)}
+.tk-led-row.tk-pass .tk-led-status,.tk-led-row.tk-pass .tk-led-val{color:var(--tk-green)}
+.tk-led-row.tk-fail{border-color:rgba(255,92,108,.55);background:rgba(255,92,108,.07)}
+.tk-led-row.tk-fail .tk-led-dot{background:var(--tk-red);box-shadow:0 0 8px var(--tk-red)}
+.tk-led-row.tk-fail .tk-led-status,.tk-led-row.tk-fail .tk-led-val{color:var(--tk-red)}
+.tk-led-row.tk-pass .tk-led-bar>i,.tk-led-row.tk-fail .tk-led-bar>i,.tk-led-row.tk-idle .tk-led-bar>i{opacity:0}
+@keyframes tk-blink{50%{opacity:.35}}
+
+/* 5 ── Big state word */
+.tk-state{display:inline-flex;align-items:center;gap:12px;font:800 34px/1 var(--tk-mono);letter-spacing:.14em;color:var(--tk-muted);
+  transition:color .25s,text-shadow .25s}
+.tk-state::before{content:"";width:14px;height:14px;border-radius:50%;background:currentColor;box-shadow:0 0 14px currentColor}
+.tk-state.tk-safe{color:var(--tk-green);text-shadow:0 0 18px rgba(110,231,160,.35)}
+.tk-state.tk-armed{color:var(--tk-amber);text-shadow:0 0 18px rgba(255,179,71,.4)}
+.tk-state.tk-firing{color:var(--tk-flame);animation:tk-pulse .55s ease-in-out infinite}
+.tk-state.tk-incident-state{color:var(--tk-red);text-shadow:0 0 20px rgba(255,92,108,.5)}
+@keyframes tk-pulse{0%,100%{text-shadow:0 0 10px rgba(255,122,26,.45);opacity:1}50%{text-shadow:0 0 34px rgba(255,122,26,.95),0 0 60px rgba(255,179,71,.4);opacity:.82}}
+
+/* 6 ── Start gate */
+.tk-gate{position:fixed;inset:0;z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+  background:radial-gradient(ellipse at 50% 60%,#131c30 0%,var(--tk-bg) 62%);color:var(--tk-text);font-family:var(--tk-sans);
+  opacity:1;transition:opacity .6s ease}
+.tk-gate.tk-on{display:flex}
+.tk-gate.tk-out{opacity:0;pointer-events:none}
+.tk-gate-kicker{font:700 11px/1 var(--tk-mono);letter-spacing:.3em;color:var(--tk-muted)}
+.tk-gate-title{font:800 44px/1.05 var(--tk-sans);margin:0;text-align:center;letter-spacing:-.01em}
+.tk-gate-btn{font:800 18px/1 var(--tk-mono);letter-spacing:.16em;color:#1a1205;background:var(--tk-amber);border:0;border-radius:10px;
+  padding:22px 40px;cursor:pointer;box-shadow:0 0 0 1px rgba(255,179,71,.5),0 0 44px rgba(255,122,26,.35);transition:transform .15s,box-shadow .15s;
+  animation:tk-gateglow 2s ease-in-out infinite}
+.tk-gate-btn:hover{transform:translateY(-2px) scale(1.02)}
+.tk-gate-btn:focus-visible{outline:3px solid var(--tk-cyan);outline-offset:4px}
+.tk-gate-hint{font:12px/1 var(--tk-mono);color:var(--tk-muted)}
+.tk-gate-hint kbd{font:inherit;border:1px solid var(--tk-line);border-radius:4px;padding:2px 6px;color:var(--tk-text)}
+@keyframes tk-gateglow{50%{box-shadow:0 0 0 1px rgba(255,179,71,.7),0 0 70px rgba(255,122,26,.6)}}
+
+/* 7 ── Guided-sequence step strip */
+.tk-steps{display:flex;align-items:stretch;gap:6px;font-family:var(--tk-mono);min-width:0}
+.tk-step{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--tk-line);border-radius:6px;
+  background:var(--tk-panel2);color:var(--tk-muted);font-size:11px;font-weight:700;letter-spacing:.08em;white-space:nowrap;overflow:hidden;
+  transition:border-color .25s,color .25s,box-shadow .25s,opacity .25s,background .25s}
+.tk-step-n{flex:none;width:18px;height:18px;border-radius:50%;border:1px solid currentColor;display:grid;place-items:center;font-size:10px}
+.tk-step-t{overflow:hidden;text-overflow:ellipsis}
+.tk-step.tk-done{opacity:.5;color:var(--tk-green)}
+.tk-step.tk-done .tk-step-n{background:var(--tk-green);border-color:var(--tk-green);color:var(--tk-bg)}
+.tk-step.tk-current{color:var(--tk-amber);border-color:var(--tk-amber);background:rgba(255,179,71,.08);
+  box-shadow:0 0 0 1px rgba(255,179,71,.35),0 0 18px rgba(255,179,71,.3);animation:tk-stepglow 1.4s ease-in-out infinite}
+@keyframes tk-stepglow{50%{box-shadow:0 0 0 1px rgba(255,179,71,.6),0 0 28px rgba(255,179,71,.5)}}
+
+@media (prefers-reduced-motion:reduce){
+  .tk-state.tk-firing,.tk-step.tk-current,.tk-gate-btn,.tk-led-row.tk-measuring .tk-led-dot{animation:none}
+  .tk-incident,.tk-incident.tk-on,.tk-gate,.tk-freezable{transition-duration:.01s}
+}
+/* ==== TK STYLE END ==== */
+</style>
+
+<!-- DEMO-ONLY page styles (do not graft) -->
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:var(--tk-bg);color:var(--tk-text);font-family:var(--tk-sans);display:grid;grid-template-rows:auto 1fr auto;gap:12px;padding:12px 16px}
+.demo-top{display:flex;align-items:center;gap:18px;padding:10px 16px;background:var(--tk-panel);border:1px solid var(--tk-line);border-radius:10px}
+.demo-top h1{font:700 13px/1 var(--tk-mono);letter-spacing:.18em;margin:0;color:var(--tk-text)}
+.demo-top small{color:var(--tk-muted);font-size:12px}
+.demo-top .sp{margin-left:auto}
+.demo-main{display:grid;grid-template-columns:1.62fr minmax(330px,1fr);gap:12px;min-height:0}
+.demo-panel{background:var(--tk-panel);border:1px solid var(--tk-line);border-radius:10px;padding:14px;min-height:0;min-width:0}
+.demo-h{font:700 10.5px/1 var(--tk-mono);letter-spacing:.18em;color:var(--tk-muted);margin:0 0 10px}
+.demo-stagewrap{position:relative;overflow:hidden;padding:0}
+.demo-stage{position:absolute;inset:0;background:
+  radial-gradient(ellipse at 78% 55%,rgba(255,122,26,.28),transparent 42%),
+  linear-gradient(var(--tk-line) 1px,transparent 1px) 0 0/100% 48px,
+  linear-gradient(90deg,var(--tk-line) 1px,transparent 1px) 0 0/48px 100%,var(--tk-panel2)}
+.demo-pipe{position:absolute;left:8%;right:30%;top:50%;height:6px;margin-top:-3px;background:repeating-linear-gradient(90deg,var(--tk-cyan) 0 14px,transparent 14px 24px);opacity:.8}
+.demo-part{position:absolute;top:50%;transform:translate(-50%,-50%);width:74px;height:74px;border-radius:12px;border:2px solid var(--tk-cyan);
+  background:var(--tk-panel);display:grid;place-items:center;font:700 13px/1 var(--tk-mono);color:var(--tk-cyan);cursor:help}
+.demo-part:hover{border-color:var(--tk-amber);color:var(--tk-amber)}
+.demo-engine{position:absolute;left:70%;top:50%;transform:translateY(-50%);width:0;height:0;border-style:solid;border-width:70px 0 70px 150px;
+  border-color:transparent transparent transparent var(--tk-flame);filter:drop-shadow(0 0 30px var(--tk-flame))}
+.demo-note{position:absolute;left:16px;top:14px;font-size:12px;color:var(--tk-muted)}
+.demo-right{display:grid;grid-template-rows:auto auto 1fr;gap:12px;min-height:0}
+.demo-btns{display:flex;flex-wrap:wrap;gap:8px}
+.demo-bottom{display:grid;gap:10px}
+.demo-log{font:11.5px/1.5 var(--tk-mono);color:var(--tk-muted);white-space:pre-wrap;overflow:hidden}
+</style>
+</head>
+<body>
+
+<header class="demo-top">
+  <h1>TK · UI-CHROME KIT</h1><small>graftable blocks: style / html / script — all prefixed tk</small>
+  <span class="sp"></span>
+  <!-- ==== TK HTML 5: state word ==== -->
+  <div id="tk-state" class="tk-state tk-safe" role="status" aria-live="polite">SAFE</div>
+  <!-- ==== /TK HTML 5 ==== -->
+  <button class="tk-btn" id="demo-prompt">PROMPT</button>
+</header>
+
+<main class="demo-main">
+  <!-- stage wrapper: position:relative; the incident card is a SIBLING of the freezable stage so it keeps its colour -->
+  <section class="demo-panel demo-stagewrap">
+    <div id="demo-stage" class="demo-stage tk-freezable" data-tk-stage>
+      <canvas id="demo-canvas" style="position:absolute;inset:0;width:100%;height:100%"></canvas>
+      <div class="demo-note">Fake stage — hover a component for its teaching card</div>
+      <div class="demo-pipe"></div>
+      <div class="demo-part" style="left:12%" data-code="CYL">CYL</div>
+      <div class="demo-part" style="left:28%" data-code="PR1">PR1</div>
+      <div class="demo-part" style="left:44%" data-code="MV1">MV1</div>
+      <div class="demo-part" style="left:60%" data-code="CK2">CK2</div>
+      <div class="demo-engine"></div>
+    </div>
+
+    <!-- ==== TK HTML 3: incident report card (sibling of the stage, inside a position:relative wrapper) ==== -->
+    <aside id="tk-incident" class="tk-incident" role="alertdialog" aria-labelledby="tk-incident-title" aria-hidden="true">
+      <div id="tk-incident-kicker" class="tk-incident-kicker">INCIDENT REPORT</div>
+      <h2 id="tk-incident-title" class="tk-incident-title"></h2>
+      <div><div class="tk-incident-label">WHAT HAPPENED</div><div id="tk-incident-happened" class="tk-incident-text"></div></div>
+      <div id="tk-incident-number" class="tk-incident-number"></div>
+      <div><div id="tk-incident-prevent-label" class="tk-incident-label">HOW TO PREVENT IT</div><div id="tk-incident-prevent" class="tk-incident-text"></div></div>
+      <button id="tk-incident-reset" class="tk-btn tk-incident-reset" type="button">RESET</button>
+    </aside>
+    <!-- ==== /TK HTML 3 ==== -->
+  </section>
+
+  <div class="demo-right">
+    <section class="demo-panel">
+      <h3 class="demo-h">VERIFY</h3>
+      <!-- ==== TK HTML 4: verification ledger (one .tk-led-row per check; ids are yours) ==== -->
+      <div class="tk-ledger">
+        <div id="tk-led-thrust" class="tk-led-row tk-idle">
+          <span class="tk-led-dot"></span><span class="tk-led-label">Thrust vs. CF·Pc·At</span><span class="tk-led-status">idle</span>
+          <span class="tk-led-val">–</span><span class="tk-led-bar"><i></i></span>
+        </div>
+        <div id="tk-led-cstar" class="tk-led-row tk-idle">
+          <span class="tk-led-dot"></span><span class="tk-led-label">c* vs. CEA-derived fit</span><span class="tk-led-status">idle</span>
+          <span class="tk-led-val">–</span><span class="tk-led-bar"><i></i></span>
+        </div>
+        <div id="tk-led-mach" class="tk-led-row tk-idle">
+          <span class="tk-led-dot"></span><span class="tk-led-label">Exit Mach vs. area ratio</span><span class="tk-led-status">idle</span>
+          <span class="tk-led-val">–</span><span class="tk-led-bar"><i></i></span>
+        </div>
+      </div>
+      <!-- ==== /TK HTML 4 ==== -->
+    </section>
+
+    <section class="demo-panel">
+      <h3 class="demo-h">DEMO · EXERCISE EVERY COMPONENT</h3>
+      <div class="demo-btns">
+        <button class="tk-btn" id="demo-ledger">Run verification</button>
+        <button class="tk-btn" id="demo-ledger-reset">Ledger idle</button>
+        <button class="tk-btn" id="demo-state">Cycle state word</button>
+        <button class="tk-btn" id="demo-step">Next step</button>
+        <button class="tk-btn" id="demo-card">Show card</button>
+        <button class="tk-btn" id="demo-card-hide">Hide card</button>
+        <button class="tk-btn" id="demo-incident">Incident: BURST</button>
+        <button class="tk-btn" id="demo-clean">Ending: CLEAN_RUN</button>
+        <button class="tk-btn" id="demo-gate">Start gate</button>
+      </div>
+    </section>
+
+    <section class="demo-panel">
+      <h3 class="demo-h">CALL LOG</h3>
+      <div id="demo-log" class="demo-log"></div>
+    </section>
+  </div>
+</main>
+
+<footer class="demo-bottom">
+  <section class="demo-panel" style="padding:10px 14px">
+    <!-- ==== TK HTML 7: step strip container (filled by tkStepsInit) ==== -->
+    <div id="tk-steps" class="tk-steps" role="list"></div>
+    <!-- ==== /TK HTML 7 ==== -->
+  </section>
+</footer>
+
+<!-- ==== TK HTML 2: teaching card (put once, directly under <body>) ==== -->
+<div id="tk-card" class="tk-card" role="tooltip" aria-hidden="true">
+  <div id="tk-card-name" class="tk-card-name"></div>
+  <div id="tk-card-what" class="tk-card-what"></div>
+  <div class="tk-card-label">WITHOUT IT</div>
+  <div id="tk-card-without" class="tk-card-without"></div>
+</div>
+<!-- ==== /TK HTML 2 ==== -->
+
+<!-- ==== TK HTML 1: SHOW THE PROMPT dialog ==== -->
+<dialog id="tk-prompt" class="tk-prompt" aria-labelledby="tk-prompt-title">
+  <div class="tk-prompt-head">
+    <span id="tk-prompt-title" class="tk-prompt-title">THE PROMPT THAT BUILT THIS</span>
+    <button id="tk-prompt-copy" class="tk-btn" type="button">Copy</button>
+    <button id="tk-prompt-close" class="tk-btn" type="button">Close</button>
+  </div>
+  <pre id="tk-prompt-body" class="tk-prompt-body" tabindex="0"></pre>
+  <div class="tk-prompt-foot">Single file · no libraries · no network. Esc closes.</div>
+</dialog>
+<!-- ==== /TK HTML 1 ==== -->
+
+<!-- ==== TK HTML 6: start gate (optional; hidden until tkGate() is called) ==== -->
+<div id="tk-gate" class="tk-gate" role="dialog" aria-modal="true" aria-labelledby="tk-gate-title">
+  <div class="tk-gate-kicker">HYBRID / LIQUID ROCKET ENGINE · STATIC FIRE</div>
+  <h1 id="tk-gate-title" class="tk-gate-title">Test Stand Simulator</h1>
+  <button id="tk-gate-btn" class="tk-gate-btn" type="button">BEGIN TEST CAMPAIGN</button>
+  <div class="tk-gate-hint"><kbd>Space</kbd> or <kbd>Enter</kbd> · enables sound</div>
+</div>
+<!-- ==== /TK HTML 6 ==== -->
+
+
+<!-- ╔══════════════════════════════════════════════════════════════════╗
+     ║ TK-KIT  BLOCK 3/3 : SCRIPT  (copy everything between the markers) ║
+     ╚══════════════════════════════════════════════════════════════════╝ -->
+<script id="tk-script">
+/* ==== TK SCRIPT BEGIN ====
+   Only globals: tkPromptOpen tkPromptClose tkCardShow tkCardHide tkIncidentShow tkIncidentHide
+                 tkLedgerSet tkStateWord tkGate tkStepsInit tkStepsSet.
+   Per-component state lives on the DOM elements themselves (el._tk), never in globals.
+   Every function is a silent no-op if its HTML snippet is missing. */
+
+/* 1 ── PROMPT dialog ------------------------------------------------ */
+function tkPromptOpen(text) {
+  const dlg = document.getElementById('tk-prompt'); if (!dlg) return;
+  const body = document.getElementById('tk-prompt-body');
+  const copy = document.getElementById('tk-prompt-copy');
+  const close = document.getElementById('tk-prompt-close');
+  body.textContent = String(text == null ? '' : text);
+  if (!dlg._tk) {
+    dlg._tk = { timer: 0 };
+    const flash = (label) => {
+      copy.textContent = label; copy.classList.toggle('tk-copied', label === 'Copied');
+      clearTimeout(dlg._tk.timer);
+      dlg._tk.timer = setTimeout(() => { copy.textContent = 'Copy'; copy.classList.remove('tk-copied'); }, 1400);
+    };
+    const legacy = (str) => {
+      let ok = false;
+      const ta = document.createElement('textarea');
+      ta.value = str; ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+      dlg.appendChild(ta);               // inside the modal dialog so it is not inert
+      try { ta.select(); ta.setSelectionRange(0, str.length); ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      ta.remove();
+      return ok;
+    };
+    copy.addEventListener('click', () => {
+      const str = body.textContent;
+      const viaLegacy = () => flash(legacy(str) ? 'Copied' : 'Select + Ctrl/Cmd-C');
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(str).then(() => flash('Copied'), viaLegacy);
+        } else viaLegacy();
+      } catch (e) { viaLegacy(); }
+    });
+    close.addEventListener('click', () => tkPromptClose());
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) tkPromptClose(); });   // backdrop click
+  }
+  if (!dlg.open) { try { dlg.showModal(); } catch (e) { dlg.setAttribute('open', ''); } }
+  body.scrollTop = 0;
+}
+function tkPromptClose() {
+  const dlg = document.getElementById('tk-prompt'); if (!dlg || !dlg.open) return;
+  try { dlg.close(); } catch (e) { dlg.removeAttribute('open'); }
+}
+
+/* 2 ── Teaching card ------------------------------------------------ */
+function tkCardShow(info, x, y) {
+  const el = document.getElementById('tk-card'); if (!el || !info) return;
+  if (el._tk !== info) {                       // only touch text when the subject changes
+    el._tk = info;
+    document.getElementById('tk-card-name').textContent = info.name || '';
+    document.getElementById('tk-card-what').textContent = info.what || '';
+    document.getElementById('tk-card-without').textContent = info.without || '';
+  }
+  const pad = 10, off = 18, w = el.offsetWidth, h = el.offsetHeight;
+  const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+  let px = x + off, py = y + off;
+  if (px + w + pad > vw) px = x - off - w;     // flip to the left of the pointer
+  if (py + h + pad > vh) py = y - off - h;     // flip above the pointer
+  px = Math.max(pad, Math.min(px, vw - w - pad));
+  py = Math.max(pad, Math.min(py, vh - h - pad));
+  el.style.transform = 'translate(' + Math.round(px) + 'px,' + Math.round(py) + 'px)';
+  el.classList.add('tk-on'); el.setAttribute('aria-hidden', 'false');
+}
+function tkCardHide() {
+  const el = document.getElementById('tk-card'); if (!el) return;
+  el.classList.remove('tk-on'); el.setAttribute('aria-hidden', 'true');
+}
+
+/* 3 ── Incident report card ----------------------------------------- */
+/* stage (optional): element or selector to freeze; default = first [data-tk-stage]. */
+function tkIncidentShow(info, onReset, stage) {
+  const el = document.getElementById('tk-incident'); if (!el || !info) return;
+  const st = typeof stage === 'string' ? document.querySelector(stage) : (stage || document.querySelector('[data-tk-stage]'));
+  const ok = !!info.ok;
+  document.getElementById('tk-incident-kicker').textContent = ok ? 'TEST REPORT · NOMINAL' : 'INCIDENT REPORT';
+  document.getElementById('tk-incident-title').textContent = info.title || '';
+  document.getElementById('tk-incident-happened').textContent = info.happened || '';
+  document.getElementById('tk-incident-number').textContent = info.number || '';
+  document.getElementById('tk-incident-prevent-label').textContent = ok ? 'WHY IT WORKED' : 'HOW TO PREVENT IT';
+  document.getElementById('tk-incident-prevent').textContent = info.prevent || '';
+  el.classList.toggle('tk-ok', ok);
+  const btn = document.getElementById('tk-incident-reset');
+  if (!el._tk) {
+    el._tk = { onReset: null, stage: null };
+    btn.addEventListener('click', () => {
+      const cb = el._tk.onReset;
+      tkIncidentHide();
+      if (typeof cb === 'function') cb();
+    });
+  }
+  if (el._tk.stage && el._tk.stage !== st) el._tk.stage.classList.remove('tk-frozen');
+  el._tk.onReset = onReset || null; el._tk.stage = st || null;
+  if (st) st.classList.add('tk-frozen');
+  el.classList.add('tk-on'); el.setAttribute('aria-hidden', 'false');
+  try { btn.focus({ preventScroll: true }); } catch (e) {}
+}
+function tkIncidentHide() {
+  const el = document.getElementById('tk-incident'); if (!el) return;
+  el.classList.remove('tk-on'); el.setAttribute('aria-hidden', 'true');
+  if (el._tk) { if (el._tk.stage) el._tk.stage.classList.remove('tk-frozen'); el._tk.onReset = null; el._tk.stage = null; }
+}
+
+/* 4 ── Verification ledger ------------------------------------------ */
+/* s = {state:'idle'|'measuring'|'pass'|'fail', pct, value, ref, unit}. textContent/classList only. */
+function tkLedgerSet(rowId, s) {
+  const row = document.getElementById(rowId); if (!row || !s) return;
+  const c = row._tk || (row._tk = {
+    status: row.querySelector('.tk-led-status'), val: row.querySelector('.tk-led-val'),
+    bar: row.querySelector('.tk-led-bar>i'), last: ''
+  });
+  const state = ['idle', 'measuring', 'pass', 'fail'].indexOf(s.state) >= 0 ? s.state : 'idle';
+  const num = (v) => (typeof v === 'number' ? (isFinite(v) ? String(+v.toPrecision(4)) : '–') : (v == null || v === '' ? '–' : String(v)));
+  const unit = s.unit ? ' ' + s.unit : '';
+  let status = 'idle', val = '–', frac = 0;
+  if (state === 'measuring') {
+    const p = Math.max(0, Math.min(100, Math.round(+s.pct || 0)));
+    status = 'measuring ' + p + '%'; frac = p / 100;
+    val = s.ref != null ? 'reference ' + num(s.ref) + unit : '…';
+  } else if (state === 'pass' || state === 'fail') {
+    status = state === 'pass' ? 'pass ✓' : 'fail ✗'; frac = 1;
+    val = 'measured ' + num(s.value) + unit + '  ·  reference ' + num(s.ref) + unit;
+    const v = +s.value, r = +s.ref;
+    if (isFinite(v) && isFinite(r) && r !== 0) { const d = (v - r) / r * 100; val += '  ·  ' + (d >= 0 ? '+' : '') + d.toFixed(1) + '%'; }
+  }
+  if (c.last !== state) {
+    row.classList.remove('tk-idle', 'tk-measuring', 'tk-pass', 'tk-fail');
+    row.classList.add('tk-' + state); c.last = state;
+  }
+  if (c.status && c.status.textContent !== status) c.status.textContent = status;
+  if (c.val && c.val.textContent !== val) c.val.textContent = val;
+  if (c.bar) c.bar.style.transform = 'scaleX(' + frac + ')';
+}
+
+/* 5 ── Big state word ----------------------------------------------- */
+function tkStateWord(word) {
+  const el = document.getElementById('tk-state'); if (!el) return;
+  const map = { SAFE: 'tk-safe', ARMED: 'tk-armed', FIRING: 'tk-firing', INCIDENT: 'tk-incident-state' };
+  const w = String(word || '').toUpperCase();
+  el.classList.remove('tk-safe', 'tk-armed', 'tk-firing', 'tk-incident-state');
+  if (map[w]) el.classList.add(map[w]);
+  if (el.textContent !== w) el.textContent = w;
+}
+
+/* 6 ── Start gate ---------------------------------------------------- */
+/* onStart runs synchronously inside the click/keydown → create/resume AudioContext there. */
+function tkGate(onStart) {
+  const el = document.getElementById('tk-gate'); if (!el) { if (typeof onStart === 'function') onStart(); return; }
+  const btn = document.getElementById('tk-gate-btn');
+  if (el._tk && el._tk.open) { el._tk.onStart = onStart; return; }
+  const st = el._tk || (el._tk = { open: false, onStart: null, key: null, bound: false });
+  st.open = true; st.onStart = onStart;
+  const go = () => {
+    if (!st.open) return;
+    st.open = false;
+    document.removeEventListener('keydown', st.key, true);
+    const cb = st.onStart; st.onStart = null;
+    if (typeof cb === 'function') { try { cb(); } catch (e) { console.error(e); } }
+    el.classList.add('tk-out');
+    setTimeout(() => { if (!st.open) el.classList.remove('tk-on', 'tk-out'); }, 650);
+  };
+  st.key = (e) => {
+    if (e.key === ' ' || e.code === 'Space' || e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); if (!e.repeat) go(); }
+  };
+  if (!st.bound) { st.bound = true; btn.addEventListener('click', () => { if (el._tk.go) el._tk.go(); }); }
+  st.go = go;
+  document.addEventListener('keydown', st.key, true);   // capture: the app's own Space handler never sees it
+  el.classList.remove('tk-out'); el.classList.add('tk-on');
+  try { btn.focus({ preventScroll: true }); } catch (e) {}
+}
+
+/* 7 ── Guided-sequence step strip ----------------------------------- */
+function tkStepsInit(container, labels) {
+  const box = typeof container === 'string' ? document.querySelector(container) : container; if (!box) return;
+  box.textContent = '';                                   // built once here; tkStepsSet never rebuilds
+  const items = (labels || []).map((label, i) => {
+    const step = document.createElement('div'); step.className = 'tk-step'; step.setAttribute('role', 'listitem');
+    const n = document.createElement('span'); n.className = 'tk-step-n'; n.textContent = String(i + 1);
+    const t = document.createElement('span'); t.className = 'tk-step-t'; t.textContent = label;
+    step.appendChild(n); step.appendChild(t); box.appendChild(step);
+    return { step, n };
+  });
+  box.classList.add('tk-steps');
+  box._tk = { items, index: -1 };
+  tkStepsSet(0, box);
+}
+/* index: current step (0-based); -1 = none; >= length = all done. container optional (default #tk-steps). */
+function tkStepsSet(index, container) {
+  const box = (typeof container === 'string' ? document.querySelector(container) : container) || document.getElementById('tk-steps');
+  if (!box || !box._tk) return;
+  box._tk.index = index;
+  box._tk.items.forEach((it, i) => {
+    const done = i < index, cur = i === index;
+    it.step.classList.toggle('tk-done', done);
+    it.step.classList.toggle('tk-current', cur);
+    if (cur) it.step.setAttribute('aria-current', 'step'); else it.step.removeAttribute('aria-current');
+    const mark = done ? '✓' : String(i + 1);
+    if (it.n.textContent !== mark) it.n.textContent = mark;
+  });
+}
+/* ==== TK SCRIPT END ==== */
+</script>
+
+<!-- DEMO-ONLY wiring (do not graft) -->
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const logEl = $('demo-log'); const lines = [];
+  const log = (s) => { lines.push(s); while (lines.length > 9) lines.shift(); logEl.textContent = lines.join('\n'); };
+
+  const CARDS = {
+    CYL: { name: 'CYL · N2O RUN TANK', what: 'Stores the oxidiser as a self-pressurising liquid at about 50 bar.', without: 'No oxidiser, no combustion. Overfill it and the liquid has nowhere to expand.' },
+    PR1: { name: 'PR1 · PRESSURE REGULATOR', what: 'Drops bottle pressure to a steady manifold pressure so the feed does not sag as the bottle empties.', without: 'Manifold sees full bottle pressure — see ending REG_FAIL.' },
+    MV1: { name: 'MV1 · MAIN VALVE', what: 'The last gate between propellant and the injector. Opening speed sets how hard the engine starts.', without: 'You cannot stop the run. Open it too fast onto a cold chamber and you get HARD_START.' },
+    CK2: { name: 'CK2 · CHECK VALVE', what: 'Lets purge nitrogen flow in, never lets hot gas flow back.', without: 'Combustion gas walks up the purge line — FLASHBACK.' }
+  };
+  const STEPS = ['ARM', 'PURGE', 'REGULATOR', 'IGNITER', 'MAIN VALVE', 'BURN', 'SHUTDOWN', 'VENT'];
+  const WORDS = ['SAFE', 'ARMED', 'FIRING', 'INCIDENT'];
+  const ROWS = [
+    { id: 'tk-led-thrust', value: 1183, ref: 1200, unit: 'N', ok: true },
+    { id: 'tk-led-cstar', value: 1438, ref: 1560, unit: 'm/s', ok: false },
+    { id: 'tk-led-mach', value: 2.61, ref: 2.58, unit: '', ok: true }
+  ];
+  const PROMPT = 'Build a single-file rocket-engine test-stand simulator.\n\n' +
+    '- Pure Canvas 2D, CSS grid, system fonts, no libraries, no network.\n' +
+    '- Situations first: NO_LIGHT, HARD_START, ADIABATIC, CHUG, BURST, BURN_THROUGH, FLASHBACK, REG_FAIL, POWER_CUT, CLEAN_RUN.\n' +
+    '- Every component teaches: name / what it does / what happens without it.\n' +
+    '- Every ending freezes the stage and slides in an incident report.\n\n' +
+    '(demo text — pass the real prompt string to tkPromptOpen(text))\n';
+
+  let word = 0, step = 2, timer = 0;
+
+  (function plume() {                                        // stand-in for the real #stand canvas
+    const cv = $('demo-canvas'), g = cv.getContext('2d');
+    const draw = (now) => {
+      const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+      g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+      const x0 = w * 0.7 + 150, y0 = h / 2; g.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 6; i++) {
+        const x = x0 + i * 34 + Math.sin(now / 90 + i) * 3, r = 46 - i * 5 + Math.sin(now / 60 + i * 2) * 3;
+        const gr = g.createRadialGradient(x, y0, 0, x, y0, r);
+        gr.addColorStop(0, 'rgba(255,230,180,.85)'); gr.addColorStop(.4, 'rgba(255,122,26,.5)'); gr.addColorStop(1, 'rgba(255,122,26,0)');
+        g.fillStyle = gr; g.beginPath(); g.arc(x, y0, r, 0, 6.2832); g.fill();
+      }
+      g.globalCompositeOperation = 'source-over';
+      requestAnimationFrame(draw);
+    };
+    requestAnimationFrame(draw);
+  })();
+
+  tkStepsInit($('tk-steps'), STEPS); tkStepsSet(step);
+  tkStateWord('SAFE');
+  tkLedgerSet(ROWS[0].id, { state: 'pass', value: 1183, ref: 1200, unit: 'N' });
+  tkLedgerSet(ROWS[1].id, { state: 'measuring', pct: 42, ref: 1560, unit: 'm/s' });
+  tkLedgerSet(ROWS[2].id, { state: 'idle' });
+  log('ready — tkStepsInit, tkStepsSet(2), tkStateWord("SAFE"), tkLedgerSet ×3');
+
+  $('demo-prompt').addEventListener('click', () => { tkPromptOpen(PROMPT); log('tkPromptOpen(text)'); });
+
+  $('demo-ledger').addEventListener('click', () => {
+    clearInterval(timer); let t = 0;
+    log('tkLedgerSet: measuring → pass/fail (timer)');
+    timer = setInterval(() => {
+      t += 4; let alive = false;
+      ROWS.forEach((r, i) => {
+        const p = t - i * 30;                                  // staggered rows
+        if (p < 0) { tkLedgerSet(r.id, { state: 'idle' }); alive = true; }
+        else if (p < 100) { tkLedgerSet(r.id, { state: 'measuring', pct: p, ref: r.ref, unit: r.unit }); alive = true; }
+        else tkLedgerSet(r.id, { state: r.ok ? 'pass' : 'fail', value: r.value, ref: r.ref, unit: r.unit });
+      });
+      if (!alive) { clearInterval(timer); log('ledger done: pass / fail / pass'); }
+    }, 60);
+  });
+  $('demo-ledger-reset').addEventListener('click', () => { clearInterval(timer); ROWS.forEach((r) => tkLedgerSet(r.id, { state: 'idle' })); log('tkLedgerSet(id,{state:"idle"}) ×3'); });
+
+  $('demo-state').addEventListener('click', () => { word = (word + 1) % WORDS.length; tkStateWord(WORDS[word]); log('tkStateWord("' + WORDS[word] + '")'); });
+  $('demo-step').addEventListener('click', () => { step = step >= STEPS.length ? 0 : step + 1; tkStepsSet(step); log('tkStepsSet(' + step + ')'); });
+
+  $('demo-card').addEventListener('click', (e) => { const r = e.currentTarget.getBoundingClientRect(); tkCardShow(CARDS.MV1, r.left, r.bottom); log('tkCardShow(CARDS.MV1, x, y)'); });
+  $('demo-card-hide').addEventListener('click', () => { tkCardHide(); log('tkCardHide()'); });
+  document.querySelectorAll('.demo-part').forEach((p) => {
+    p.addEventListener('pointermove', (e) => tkCardShow(CARDS[p.dataset.code], e.clientX, e.clientY));
+    p.addEventListener('pointerleave', () => tkCardHide());
+  });
+
+  const onReset = () => { word = 0; tkStateWord('SAFE'); step = 0; tkStepsSet(0); log('onReset() called → SAFE, step 0'); };
+  $('demo-incident').addEventListener('click', () => {
+    tkStateWord('INCIDENT'); word = 3;
+    tkIncidentShow({ title: 'BURST — chamber overpressure', happened: 'The main valve opened onto a regulator set far above design. Chamber pressure passed the burst limit in 40 ms and the case let go at the aft closure.',
+      number: 'Pc 71 bar  vs  burst 60 bar', prevent: 'Set PR1 to design manifold pressure before ARM, and let relief valve RV1 and burst disc RD1 do their job — never cap them.', ok: false }, onReset);
+    log('tkIncidentShow({…ok:false}, onReset)');
+  });
+  $('demo-clean').addEventListener('click', () => {
+    tkStateWord('SAFE'); word = 0;
+    tkIncidentShow({ title: 'CLEAN_RUN — nominal burn', happened: 'Purge, light, 6.2 s steady burn, commanded shutdown, vent. Every reading stayed inside its band.',
+      number: 'Isp 214 s  ·  Pc 24.8 bar', prevent: 'Sequence followed in order; regulator at design pressure; main valve opened over 0.8 s.', ok: true }, onReset);
+    log('tkIncidentShow({…ok:true}, onReset)');
+  });
+
+  $('demo-gate').addEventListener('click', () => { tkGate(() => log('tkGate → onStart() (user gesture: unlock audio here)')); log('tkGate(onStart)'); });
+})();
+</script>
+</body>
+</html>
