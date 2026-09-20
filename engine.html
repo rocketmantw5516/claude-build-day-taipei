@@ -1715,7 +1715,7 @@ const COACH=(function(){
   const SCRIPTS=[
    {name:"THE WRONG WAY",steps:[
      {t:segBtn("modeSeg","data-m","free"),txt:"Click FREE",done:()=>mode==="free",say:"We're a student rocket team. This is our real engine on its test stand — rebuilt from the equations, by one prompt, in one HTML file."},
-     {t:el("rMv"),txt:()=>"Drag OPEN TIME fully LEFT 拉到最左 (now "+C.mvTime.toFixed(2)+" s → 0.02 s)",done:()=>C.mvTime<=0.05,say:"Every valve here has a reason. Let me show you one. I set the main valve to snap open."},
+     {t:el("rMv"),txt:()=>"Drag OPEN TIME to the LEFT, then let go · 往左拉再放開 (now "+C.mvTime.toFixed(2)+" s)",done:()=>C.mvTime<=0.05,say:"Every valve here has a reason. Let me show you one. I set the main valve to snap open."},
      {t:el("bHV3"),txt:"Click HV3",done:()=>C.hv3||!!S.ending,say:"Open the manual valve."},
      {t:el("bMV"),txt:"Click MAIN VALVE",done:()=>C.mvCmd||!!S.ending,say:"Watch. I open the main valve — too fast."},
      {t:el("stand"),txt:"DON'T TALK — let it burn",wait:true,done:()=>reportShown,say:""},
@@ -1751,10 +1751,10 @@ const COACH=(function(){
     else ring.style.display="none";
   }
   setInterval(tick,100);
-  return {toggle(){on=!on;$("bCoach").textContent=on?"COACH ON":"COACH OFF";setCls($("bCoach"),"on",on);},restart(){si=0;ti=0;},isOn:()=>on};
+  return {toggle(){on=!on;$("bCoach").textContent=on?"COACH ON":"COACH OFF";setCls($("bCoach"),"on",on);},restart(){si=0;ti=0;},isOn:()=>on,stepIs:(a,b)=>si===a&&ti===b};
 })();
 $("bCoach").onclick=()=>COACH.toggle();
-$("rMv").addEventListener("change",()=>{const r=$("rMv");if(COACH.isOn()&&mode==="free"&&parseFloat(r.value)<0.4&&parseFloat(r.value)>0.02){r.value=0.02;if(r.oninput)r.oninput();}});
+$("rMv").addEventListener("change",()=>{const r=$("rMv");if(COACH.isOn()&&(COACH.stepIs(0,1)||(mode==="free"&&parseFloat(r.value)<0.4))&&parseFloat(r.value)>0.02){r.value=0.02;if(r.oninput)r.oninput();}});
 function allReset(){
   timeScale=1;{const c=$("tsSeg").children;for(let i=0;i<c.length;i++)c[i].classList.toggle("on",i===0);}
   {const r=$("rReg");r.value=40;if(r.oninput)r.oninput();}

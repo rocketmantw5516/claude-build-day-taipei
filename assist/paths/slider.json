@@ -1,0 +1,1 @@
+[{"wait":400},{"click":"#modeSeg [data-m=free]"},{"wait":300},{"range":["#rMv","0.76"]},{"eval":"document.querySelector('#rMv').dispatchEvent(new Event('change'));C.mvTime+' | '+document.querySelector('#coDo').textContent","label":"after release at 0.76"},{"wait":300},{"eval":"document.querySelector('#coDo').textContent","label":"coach next"}]
