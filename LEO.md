@@ -14,7 +14,7 @@ DEMO-SCRIPT.md          2 分鐘英文講稿
 
 分支用 `leo`,做完一塊就 push 一次。不要動 `PROMPT.md`、`engine.html`、`out/`。
 
-## 介面契約(主線照這個接)
+## 介面契約(主線照這個接;物件欄位以 `INTERFACE.md` 的定案為準)
 
 ```js
 // modules/cards.js — 不准碰 DOM、不准有副作用
@@ -38,7 +38,7 @@ function randomEngine(seed) { /* 回傳同樣形狀的物件;要會產生「壞�
 ## 貼進你那台 Claude Code 的提示詞
 
 ```
-Read KNOWLEDGE.md, STYLE-REFERENCE.md and LEO.md in this repo. Work only on the `leo` branch and only in
+Read INTERFACE.md, KNOWLEDGE.md, STYLE-REFERENCE.md and LEO.md in this repo. INTERFACE.md is the contract: use its exact object fields, ending codes and component codes. Work only on the `leo` branch and only in
 modules/ and DEMO-SCRIPT.md.
 
 1. Write modules/engines.js exactly to the interface in LEO.md: our real hybrid profile from KNOWLEDGE.md §1,
@@ -57,6 +57,14 @@ modules/ and DEMO-SCRIPT.md.
 
 Commit and push after each of the four steps.
 ```
+
+## 優先順序(只剩一小時)
+
+1. `modules/cards.js` — **最先做、18:50 前 push**。這是主線最需要、也最不會出錯的一塊。
+2. `modules/engines.js` + `preview.html` — 19:00 前 push。
+3. `DEMO-SCRIPT.md` — 19:00 之後寫,19:20 從畫面抄數字。
+
+每一塊做完就 push,不要等全部好。
 
 ## 19:00 怎麼合
 
