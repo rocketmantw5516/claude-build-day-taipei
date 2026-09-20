@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Engine shape preview — modules/engines.js</title>
+<!-- Leo's eyeballing page. NOT part of the product. Open via file:// next to engines.js. -->
+<style>
+  :root {
+    --bg: #070a12; --panel: #101725; --panel2: #0c111c; --line: #232d44;
+    --text: #e9eef7; --muted: #8b98b2;
+    --amber: #ffb347; --flame: #ff7a1a; --cyan: #5fd3ff; --green: #6ee7a0; --red: #ff5c6c;
+    --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
+    padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel2);
+  }
+  header h1 { margin: 0; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; font-weight: 650; }
+  header h1 small { display: block; font-size: 11px; letter-spacing: .04em; color: var(--muted); text-transform: none; font-weight: 400; }
+  .spacer { flex: 1 1 auto; }
+  label.fld { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+  input[type=number] {
+    width: 110px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--amber); font: 600 15px var(--mono);
+  }
+  input[type=checkbox] { accent-color: var(--cyan); }
+  button {
+    font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; padding: 6px 10px; cursor: pointer;
+  }
+  button:hover { border-color: var(--muted); }
+  #roll {
+    font: 700 15px system-ui, sans-serif; letter-spacing: .1em; padding: 12px 22px; color: #1a0d00;
+    background: linear-gradient(180deg, var(--amber), var(--flame)); border: 0; border-radius: 8px;
+    box-shadow: 0 0 18px rgba(255, 122, 26, .35);
+  }
+  #roll:hover { filter: brightness(1.08); }
+  #roll:active { transform: translateY(1px); }
+  main { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding: 12px 16px 20px; }
+  @media (max-width: 1250px) { main { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 680px) { main { grid-template-columns: minmax(0, 1fr); } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px 12px; min-width: 0; }
+  .card.bad { border-color: var(--red); box-shadow: 0 0 0 1px var(--red) inset, 0 0 22px rgba(255, 92, 108, .18); }
+  .card .top { display: flex; align-items: center; gap: 8px; min-height: 28px; }
+  .card h2 { margin: 0; font-size: 14px; font-weight: 650; flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .key { font: 11px var(--mono); color: var(--muted); }
+  .badge { font: 600 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 2px 7px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; }
+  .badge.hybrid { color: var(--amber); } .badge.liquid { color: var(--cyan); }
+  .badge.flaw { color: var(--red); background: rgba(255, 92, 108, .12); }
+  .fit { font: 600 10px var(--mono); letter-spacing: .08em; padding: 3px 8px; color: var(--muted); }
+  .fit.on { color: var(--bg); background: var(--cyan); border-color: var(--cyan); }
+  canvas { display: block; width: 100%; height: 215px; margin: 8px 0; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; }
+  .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 10px; }
+  .stat b { display: block; font: 600 13px var(--mono); color: var(--text); white-space: nowrap; }
+  .stat span { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .stat.over b { color: var(--red); }
+  .note { margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+  .card.bad .note { color: #ffc2c8; }
+  .card.bad .note::before { content: "FLAW  "; font: 700 10px var(--mono); letter-spacing: .1em; color: var(--red); }
+  .check { margin: 6px 0 0; font: 11px var(--mono); color: var(--green); }
+  .check.fail { color: var(--red); }
+  .legend ul { list-style: none; margin: 8px 0 0; padding: 0; color: var(--muted); font-size: 12px; }
+  .legend li { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+  .sw { flex: 0 0 auto; width: 22px; height: 10px; border-radius: 2px; }
+  .legend p { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
+  .legend code { font: 11px var(--mono); color: var(--text); }
+  #err { display: none; margin: 16px; padding: 14px; border: 1px solid var(--red); border-radius: 8px; color: var(--red); font: 13px var(--mono); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Engine shape preview<small>modules/engines.js · cutaways drawn in mm · not part of the product</small></h1>
+  <span class="spacer"></span>
+  <label class="fld"><input type="checkbox" id="pts"> profile points</label>
+  <button id="fitall" type="button">FIT ALL: OFF</button>
+  <label class="fld">seed <input type="number" id="seed" value="7" min="0" step="1"></label>
+  <button id="roll" type="button">ROLL RANDOM ENGINES</button>
+</header>
+<div id="err"></div>
+<main id="grid"></main>
+
+<script src="engines.js"></script>
+<script>
+(function () {
+  "use strict";
+  var C = { bg: "#070a12", panel: "#101725", panel2: "#0c111c", line: "#232d44", text: "#e9eef7", muted: "#8b98b2",
+            amber: "#ffb347", flame: "#ff7a1a", cyan: "#5fd3ff", green: "#6ee7a0", red: "#ff5c6c" };
+  var MONO = '"SF Mono","JetBrains Mono",Menlo,Consolas,monospace';
+  var WALL_MM = 5;        // DRAWING ONLY: casing thickness shown around the inner contour. Not a real dimension.
+  var BAR_MM = 50;        // length of the scale bar
+  var PAD = { l: 14, r: 14, t: 30, b: 34 };
+  var N_RANDOM = 3;
+
+  var grid = document.getElementById("grid");
+  var seedEl = document.getElementById("seed");
+  var errEl = document.getElementById("err");
+
+  if (typeof ENGINES === "undefined" || typeof randomEngine !== "function") {
+    errEl.style.display = "block";
+    errEl.textContent = "engines.js did not load: ENGINES / randomEngine are missing. Keep preview.html in the same folder as engines.js.";
+    return;
+  }
+
+  var slots = [];          // { key, seed, engine, el, canvas, fit }
+  var fitAll = false;
+
+  function fmt(v, d) { return (typeof v === "number" && isFinite(v)) ? v.toFixed(d) : "–"; }
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+
+  /* ---------- geometry of one engine ---------- */
+  function geom(e) {
+    var p = e.profile, iT = 0, maxR = 0, i;
+    for (i = 0; i < p.length; i++) { if (p[i][1] < p[iT][1]) iT = i; if (p[i][1] > maxR) maxR = p[i][1]; }
+    if (e.grain && e.grain.outerR > maxR) maxR = e.grain.outerR;
+    return { iT: iT, xT: p[iT][0], len: p[p.length - 1][0] - p[0][0], x0: p[0][0], maxR: maxR };
+  }
+  function fitScale(e, w, h) {
+    var g = geom(e);
+    return Math.min((w - PAD.l - PAD.r) / (g.len + WALL_MM), (h - PAD.t - PAD.b) / (2 * (g.maxR + WALL_MM)));
+  }
+
+  /* ---------- contract checks (INTERFACE.md) ---------- */
+  function check(e) {
+    var bad = [], p = e.profile, i, g;
+    if (!Array.isArray(p) || p.length < 24) bad.push("profile < 24 points");
+    else {
+      g = geom(e);
+      for (i = 1; i < p.length; i++) if (p[i][0] < p[i - 1][0]) { bad.push("x goes backwards at point " + i); break; }
+      for (i = 0; i < p.length; i++) if (!isFinite(p[i][0]) || !isFinite(p[i][1])) { bad.push("non-finite point " + i); break; }
+      if (p[0][0] !== 0) bad.push("profile does not start at x = 0");
+      if (Math.abs(p[0][1] - e.chamberR) > 1e-6) bad.push("first r ≠ chamberR");
+      if (Math.abs(p[g.iT][1] - e.throatR) > 1e-6) bad.push("min r ≠ throatR");
+      if (Math.abs(p[p.length - 1][1] - e.exitR) > 1e-6) bad.push("last r ≠ exitR");
+    }
+    ["label", "type", "note"].forEach(function (k) { if (typeof e[k] !== "string" || !e[k]) bad.push(k + " missing"); });
+    ["throatR", "exitR", "chamberR", "chamberL", "designPc_bar", "burstPc_bar"].forEach(function (k) {
+      if (typeof e[k] !== "number" || !isFinite(e[k])) bad.push(k + " not a number");
+    });
+    if (e.type !== "hybrid" && e.type !== "liquid") bad.push("type not hybrid|liquid");
+    if (e.type === "hybrid" && !e.grain) bad.push("hybrid without grain");
+    if (e.grain) {
+      if (e.grain.outerR > e.chamberR) bad.push("grain wider than chamber");
+      if (e.grain.portR >= e.grain.outerR) bad.push("grain port ≥ outer");
+      if (e.grain.x0 < 0 || e.grain.x0 + e.grain.length > e.chamberL + 1e-6) bad.push("grain sticks out of chamber");
+    }
+    return bad;
+  }
+
+  /* ---------- drawing ---------- */
+  function drawCard(slot, sharedScale) {
+    var cv = slot.canvas, e = slot.engine, g = geom(e);
+    var dpr = window.devicePixelRatio || 1;
+    var w = cv.clientWidth || 360, h = cv.clientHeight || 215;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    var useFit = slot.fit || fitAll;
+    var s = useFit ? fitScale(e, w, h) : sharedScale;
+    var drawnLen = (g.len + WALL_MM) * s;
+    var ox = (w - drawnLen) / 2 + WALL_MM * s;                 // canvas x of the injector face (x = 0)
+    var cy = PAD.t + (h - PAD.t - PAD.b) / 2;                  // canvas y of the axis
+    function X(x) { return ox + (x - g.x0) * s; }
+    var p = e.profile, i;
+
+    // faint mm grid: one line every 50 mm from the injector face
+    ctx.strokeStyle = "rgba(35,45,68,.7)"; ctx.lineWidth = 1;
+    for (var gx = 0; gx <= g.len; gx += BAR_MM) { ctx.beginPath(); ctx.moveTo(Math.round(X(gx)) + .5, PAD.t - 8); ctx.lineTo(Math.round(X(gx)) + .5, h - PAD.b + 8); ctx.stroke(); }
+
+    [-1, 1].forEach(function (sg) {
+      function Y(r) { return cy + sg * r * s; }
+      // gas cavity
+      var grd = ctx.createLinearGradient(X(0), 0, X(g.x0 + g.len), 0);
+      var fT = Math.min(.98, Math.max(.02, (g.xT - g.x0) / g.len));
+      grd.addColorStop(0, "rgba(95,211,255,.07)"); grd.addColorStop(fT, "rgba(255,122,26,.26)"); grd.addColorStop(1, "rgba(255,122,26,.06)");
+      ctx.beginPath(); ctx.moveTo(X(p[0][0]), cy);
+      for (i = 0; i < p.length; i++) ctx.lineTo(X(p[i][0]), Y(p[i][1]));
+      ctx.lineTo(X(p[p.length - 1][0]), cy); ctx.closePath(); ctx.fillStyle = grd; ctx.fill();
+      // casing band (drawing-only thickness) incl. injector plate
+      var steel = ctx.createLinearGradient(0, Y(0), 0, Y(g.maxR + WALL_MM));
+      steel.addColorStop(0, "#1c2538"); steel.addColorStop(1, "#46536f");
+      ctx.beginPath(); ctx.moveTo(X(p[0][0]) - WALL_MM * s, cy); ctx.lineTo(X(p[0][0]) - WALL_MM * s, Y(p[0][1] + WALL_MM));
+      for (i = 0; i < p.length; i++) ctx.lineTo(X(p[i][0]), Y(p[i][1] + WALL_MM));
+      for (i = p.length - 1; i >= 0; i--) ctx.lineTo(X(p[i][0]), Y(p[i][1]));
+      ctx.lineTo(X(p[0][0]), cy); ctx.closePath();
+      ctx.fillStyle = steel; ctx.fill(); ctx.strokeStyle = "rgba(139,152,178,.55)"; ctx.lineWidth = 1; ctx.stroke();
+      // grain
+      if (e.grain) {
+        var gr = e.grain, gx0 = X(gr.x0), gx1 = X(gr.x0 + gr.length), y0 = Y(gr.portR), y1 = Y(gr.outerR);
+        var top = Math.min(y0, y1), hh = Math.abs(y1 - y0);
+        ctx.fillStyle = "rgba(255,179,71,.30)"; ctx.fillRect(gx0, top, gx1 - gx0, hh);
+        ctx.save(); ctx.beginPath(); ctx.rect(gx0, top, gx1 - gx0, hh); ctx.clip();
+        ctx.strokeStyle = "rgba(255,179,71,.55)"; ctx.lineWidth = 1; ctx.beginPath();
+        for (var hx = gx0 - hh; hx < gx1; hx += 7) { ctx.moveTo(hx, top + hh); ctx.lineTo(hx + hh, top); }
+        ctx.stroke(); ctx.restore();
+        ctx.strokeStyle = C.amber; ctx.lineWidth = 1.2; ctx.strokeRect(gx0, top, gx1 - gx0, hh);
+      }
+      // inner wall contour
+      ctx.beginPath();
+      for (i = 0; i < p.length; i++) { if (i) ctx.lineTo(X(p[i][0]), Y(p[i][1])); else ctx.moveTo(X(p[i][0]), Y(p[i][1])); }
+      ctx.strokeStyle = C.text; ctx.lineWidth = 1.6; ctx.lineJoin = "round"; ctx.stroke();
+      if (document.getElementById("pts").checked) {
+        ctx.fillStyle = C.cyan;
+        for (i = 0; i < p.length; i++) { ctx.beginPath(); ctx.arc(X(p[i][0]), Y(p[i][1]), 1.7, 0, 6.2832); ctx.fill(); }
+      }
+    });
+
+    // centreline (dash-dot)
+    ctx.save(); ctx.setLineDash([14, 4, 2, 4]); ctx.strokeStyle = "rgba(139,152,178,.8)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(6, Math.round(cy) + .5); ctx.lineTo(w - 6, Math.round(cy) + .5); ctx.stroke(); ctx.restore();
+
+    // diameter markers
+    function dia(x, r, colour, text, above) {
+      var px = X(x), yA = cy - r * s, yB = cy + r * s, edge = (g.maxR + WALL_MM) * s;
+      ctx.strokeStyle = colour; ctx.fillStyle = colour; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(px, yA); ctx.lineTo(px, yB);
+      ctx.moveTo(px - 4, yA); ctx.lineTo(px + 4, yA); ctx.moveTo(px - 4, yB); ctx.lineTo(px + 4, yB); ctx.stroke();
+      ctx.save(); ctx.setLineDash([2, 3]); ctx.lineWidth = 1; ctx.beginPath();
+      if (above) { ctx.moveTo(px, yA); ctx.lineTo(px, cy - edge - 5); } else { ctx.moveTo(px, yB); ctx.lineTo(px, cy + edge + 5); }
+      ctx.stroke(); ctx.restore();
+      ctx.font = "600 11px " + MONO; ctx.textBaseline = "middle";
+      var tw = ctx.measureText(text).width, tx;
+      if (above) { tx = Math.min(w - 4 - tw, Math.max(4, px - tw / 2)); ctx.textAlign = "left"; ctx.fillText(text, tx, Math.max(9, cy - edge - 13)); }
+      else { tx = (px - 8 + tw <= w - 4) ? px - 8 : w - 4 - tw; tx = Math.max(110, tx); ctx.textAlign = "left"; ctx.fillText(text, tx, Math.min(h - 9, cy + edge + 14)); }
+    }
+    dia(g.xT, e.throatR, C.cyan, "throat Ø" + fmt(2 * e.throatR, 2), true);
+    dia(p[p.length - 1][0], e.exitR, C.green, "exit Ø" + fmt(2 * e.exitR, 2), false);
+
+    // scale bar, bottom-left
+    var bl = BAR_MM * s, by = h - 12;
+    ctx.strokeStyle = C.muted; ctx.fillStyle = C.muted; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(8, by - 4); ctx.lineTo(8, by); ctx.lineTo(8 + bl, by); ctx.lineTo(8 + bl, by - 4); ctx.stroke();
+    ctx.font = "10px " + MONO; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    if (8 + bl + 6 + 34 <= 106) ctx.fillText(BAR_MM + " mm", 8 + bl + 6, by - 1);   // beside the bar when it cannot reach the exit label
+    else ctx.fillText(BAR_MM + " mm", 8, by - 10);                                    // otherwise above it
+
+    slot.scaleEl.textContent = (useFit ? "fit " : "shared ") + fmt(s, 2) + " px/mm";
+  }
+
+  function drawAll() {
+    if (!slots.length) return;
+    var w = slots[0].canvas.clientWidth || 360, h = slots[0].canvas.clientHeight || 215, shared = Infinity;
+    slots.forEach(function (sl) { shared = Math.min(shared, fitScale(sl.engine, w, h)); });
+    slots.forEach(function (sl) { drawCard(sl, shared); });
+  }
+
+  /* ---------- cards ---------- */
+  function stat(label, value, over) {
+    var d = el("div", "stat" + (over ? " over" : "")); d.appendChild(el("b", null, value)); d.appendChild(el("span", null, label)); return d;
+  }
+  function fillCard(slot) {
+    var e = slot.engine, g = geom(e), card = slot.el;
+    var isBad = !!e.flaw || /^bad design/i.test(e.note || "");
+    var eps = (e.exitR * e.exitR) / (e.throatR * e.throatR);
+    card.className = "card" + (isBad ? " bad" : "");
+    card.textContent = "";
+    var top = el("div", "top");
+    top.appendChild(el("h2", null, e.label)); top.lastChild.title = e.label;
+    top.appendChild(el("span", "badge " + e.type, e.type));
+    if (e.flaw) top.appendChild(el("span", "badge flaw", String(e.flaw).replace(/_/g, " ")));
+    var fitBtn = el("button", "fit" + (slot.fit ? " on" : ""), "FIT"); fitBtn.type = "button"; fitBtn.title = "Toggle: shared scale / fit this card";
+    fitBtn.addEventListener("click", function () { slot.fit = !slot.fit; fitBtn.className = "fit" + (slot.fit ? " on" : ""); drawAll(); });
+    top.appendChild(fitBtn);
+    card.appendChild(top);
+    var sub = el("div", "key", slot.seed == null ? "ENGINES." + slot.key : "randomEngine(" + slot.seed + ")");
+    slot.scaleEl = el("span", null, ""); sub.appendChild(document.createTextNode("  ·  ")); sub.appendChild(slot.scaleEl);
+    card.appendChild(sub);
+    slot.canvas = el("canvas"); card.appendChild(slot.canvas);
+    var st = el("div", "stats");
+    st.appendChild(stat("expansion Ae/At", fmt(eps, 2)));
+    st.appendChild(stat("design / burst Pc", fmt(e.designPc_bar, 1) + " / " + fmt(e.burstPc_bar, 0) + " bar", e.designPc_bar > e.burstPc_bar));
+    st.appendChild(stat("chamber Ø × L", fmt(2 * e.chamberR, 1) + " × " + fmt(e.chamberL, 1)));
+    st.appendChild(stat("contract. Ac/At", fmt((e.chamberR * e.chamberR) / (e.throatR * e.throatR), 1)));
+    st.appendChild(stat("overall length", fmt(g.len, 1) + " mm"));
+    st.appendChild(stat("grain Ø/port/L", e.grain ? fmt(2 * e.grain.outerR, 0) + " / " + fmt(2 * e.grain.portR, 0) + " / " + fmt(e.grain.length, 0) : "none"));
+    card.appendChild(st);
+    card.appendChild(el("p", "note", e.note));
+    var bad = check(e);
+    card.appendChild(el("div", "check" + (bad.length ? " fail" : ""), bad.length ? "CONTRACT ✗ " + bad.join("; ") : "contract ✓ " + e.profile.length + " points"));
+  }
+
+  function legendCard() {
+    var c = el("section", "card legend");
+    c.appendChild(el("h2", null, "How to read"));
+    var ul = el("ul");
+    [["rgba(255,179,71,.55)", "fuel grain (hybrid only)"], [C.cyan, "throat diameter"], [C.green, "exit diameter"],
+     ["#46536f", "casing — drawn " + WALL_MM + " mm thick for looks only, not a real dimension"], [C.red, "red border = deliberately bad design, flaw text below it"]]
+      .forEach(function (r) { var li = el("li"); var sw = el("span", "sw"); sw.style.background = r[0]; li.appendChild(sw); li.appendChild(el("span", null, r[1])); ul.appendChild(li); });
+    c.appendChild(ul);
+    var p1 = el("p"); p1.textContent = "All cards share one px/mm scale so sizes compare; FIT on a card zooms that card only. Grid lines every " + BAR_MM + " mm from the injector face (x = 0). Flow is left to right.";
+    c.appendChild(p1);
+    var p2 = el("p"); p2.id = "tally"; c.appendChild(p2);
+    return c;
+  }
+
+  function build(seed) {
+    grid.textContent = ""; var keep = {}; slots.forEach(function (s) { keep[s.id] = s.fit; }); slots = [];
+    Object.keys(ENGINES).forEach(function (k) { slots.push({ id: "p:" + k, key: k, seed: null, engine: ENGINES[k] }); });
+    for (var i = 0; i < N_RANDOM; i++) slots.push({ id: "r:" + i, key: null, seed: seed + i, engine: randomEngine(seed + i) });
+    slots.forEach(function (s) { s.fit = !!keep[s.id]; s.el = el("section"); grid.appendChild(s.el); fillCard(s); });
+    grid.appendChild(legendCard());
+    // honesty check on the generator: how many of the next 300 seeds are bad designs?
+    var n = 300, bad = 0, kinds = {};
+    for (var j = 0; j < n; j++) { var f = randomEngine(seed + j).flaw; if (f) { bad++; kinds[f] = (kinds[f] || 0) + 1; } }
+    document.getElementById("tally").textContent = "Seeds " + seed + "–" + (seed + n - 1) + ": " + bad + " of " + n + " are bad designs (" +
+      Object.keys(kinds).map(function (k) { return k.replace(/_/g, " ").toLowerCase() + " " + kinds[k]; }).join(", ") + ").";
+    drawAll();
+  }
+
+  function readSeed() { var v = Math.floor(Number(seedEl.value)); return (isFinite(v) && v >= 0) ? v : 0; }
+
+  document.getElementById("roll").addEventListener("click", function () {
+    var next = readSeed() + N_RANDOM; seedEl.value = next; build(next);
+  });
+  seedEl.addEventListener("input", function () { build(readSeed()); });
+  document.getElementById("pts").addEventListener("change", drawAll);
+  document.getElementById("fitall").addEventListener("click", function () {
+    fitAll = !fitAll; this.textContent = "FIT ALL: " + (fitAll ? "ON" : "OFF"); drawAll();
+  });
+  window.addEventListener("resize", drawAll);
+
+  var m = /seed=(\d+)/.exec(location.hash || "");   // preview.html#seed=42 jumps straight to a seed
+  if (m) seedEl.value = m[1];
+  build(readSeed());
+})();
+</script>
+</body>
+</html>
