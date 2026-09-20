@@ -38,6 +38,8 @@
 
 ## 動畫手法(我們要用的)
 
+註:官方引擎範例本身**沒有**用 `globalCompositeOperation`、也沒有粒子池,儀表是 inline SVG。下表的疊加混色與粒子池是我們自己的選擇,不是它的做法。
+
 | 效果 | 做法 |
 |---|---|
 | 發光、火焰核心 | `createRadialGradient` + `shadowBlur`;火焰粒子用 `globalCompositeOperation = 'lighter'` 疊加 |
