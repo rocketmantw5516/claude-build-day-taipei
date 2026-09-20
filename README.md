@@ -16,6 +16,7 @@
 |---|---|
 | [`PROMPT.md`](PROMPT.md) | 主提示詞(上台秀的就是這段) |
 | [`WORKFLOW-PLAN.md`](WORKFLOW-PLAN.md) | 多 agent workflow 的形狀、分工、今天的時程 |
+| [`STYLE-REFERENCE.md`](STYLE-REFERENCE.md) | 官方 Engine Lab 的技術選擇、配色、程式結構、動畫手法(讀原始碼得到的) |
 | [`KNOWLEDGE.md`](KNOWLEDGE.md) | 引擎剖面尺寸、工作點、流路、點火序列、失敗模式、液氧煤油構型 |
 | [`PLAYBOOK.md`](PLAYBOOK.md) | 從 drone91 / rtc_rocket / astronauts91 / ast91 提煉的建造與審查規則 |
 | [`REFERENCE-fable-demos.md`](REFERENCE-fable-demos.md) | 官方三個範例的實測紀錄(Leo 整理) |

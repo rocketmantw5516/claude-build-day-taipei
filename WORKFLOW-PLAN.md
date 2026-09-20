@@ -16,9 +16,9 @@ Phase 4  Fix        一個 fixer 只修「被確認」的問題,一次修完    
 
 | agent | 輸入 | 產出 |
 |---|---|---|
-| builder-A/B | `PROMPT.md` 那一段 + `KNOWLEDGE.md` + `PLAYBOOK.md` 的「建造規則」 | `out/a.html`、`out/b.html` |
+| builder-A/B | `PROMPT.md` 那一段 + `STYLE-REFERENCE.md` + `KNOWLEDGE.md` + `PLAYBOOK.md` 的「建造規則」 | `out/a.html`、`out/b.html` |
 | judge | 兩份 HTML + PROMPT | 選哪份、為什麼、另一份可搬的 3 點以內 |
-| physics | 主線 HTML + KNOWLEDGE §2 §5 | 公式、單位、因次、極限情形的錯(附行號) |
+| physics | 主線 HTML + KNOWLEDGE §2 §5 | 公式、單位、因次、極限情形的錯(附行號);**每個失敗結局是不是真的由方程式與操作順序觸發,不是寫死的劇本** |
 | gates | 主線 HTML + PLAYBOOK「審查規則」1–3 | 驗證表每列是不是真的兩條路、會不會 FAIL |
 | first-open | 主線 HTML | 語法錯、未定義變數、每幀配置、按鈕沒接事件 |
 | across-room | 主線 HTML + KNOWLEDGE §3 | 教學卡片有沒有講對「為什麼」、三公尺外讀不讀得到 |
