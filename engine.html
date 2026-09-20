@@ -73,6 +73,14 @@ padding:16px 18px;transform:translateX(120%);transition:transform .5s cubic-bezi
 #report h5{margin:10px 0 2px;font:600 10px var(--mono);color:var(--muted);letter-spacing:.1em}
 #report p{margin:0;font-size:13px}#rNum{font:600 13px var(--mono)!important;color:var(--amber)}
 #report button{margin-top:14px;font-size:13px;padding:7px 22px}
+#coachRing{position:fixed;z-index:40;pointer-events:none;border:3px solid var(--amber);border-radius:10px;box-shadow:0 0 0 0 #ffb34788,0 0 22px #ffb347aa;animation:coachPulse 1.1s ease-out infinite;display:none}
+#coachRing.wait{border-color:var(--cyan);box-shadow:0 0 18px #5fd3ff88;animation:none;border-style:dashed}
+@keyframes coachPulse{0%{box-shadow:0 0 0 0 #ffb347cc,0 0 22px #ffb347aa}100%{box-shadow:0 0 0 22px #ffb34700,0 0 22px #ffb347aa}}
+@media(prefers-reduced-motion:reduce){#coachRing{animation:none}}
+#coachBar{position:absolute;left:10px;top:8px;right:10px;z-index:5;display:none;gap:14px;align-items:baseline;flex-wrap:wrap;background:#0b1220e6;border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:8px;padding:7px 12px;pointer-events:none}
+#coachBar .k{font:700 10px var(--mono);letter-spacing:.12em;color:var(--muted)}#coachBar .do{font:700 17px var(--mono);color:var(--amber)}#coachBar.wait .do{color:var(--cyan)}
+#coachBar .say{flex-basis:100%;font:13px/1.35 system-ui,sans-serif;color:var(--text)}#coachBar .say i{font-style:normal;color:var(--cyan);font:700 10px var(--mono);letter-spacing:.12em;margin-right:8px}
+#bAll{border-color:var(--red);color:#ffd0d5}
 dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;max-width:760px;width:90vw}
 dialog::backdrop{background:#000b}dialog pre{white-space:pre-wrap;font:12px/1.5 var(--mono);max-height:60vh;overflow:auto;margin:0 0 10px}
 @media(max-width:900px){main{grid-template-columns:1fr}body{overflow:auto}#standWrap{height:60vh}}
@@ -84,10 +92,10 @@ dialog::backdrop{background:#000b}dialog pre{white-space:pre-wrap;font:12px/1.5 
  <span class="seg" id="modeSeg"><button data-m="guided" class="on">GUIDED</button><button data-m="free">FREE</button></span>
  <span id="lamp" class="SAFE">SAFE</span>
  <span id="fps">– fps</span>
- <button id="bPrompt">SHOW THE PROMPT</button>
+ <button id="bCoach" class="on">COACH ON</button><button id="bPrompt">SHOW THE PROMPT</button><button id="bAll">ALL RESET</button>
 </header>
 <main>
- <div id="standWrap"><canvas id="stand"></canvas><div id="fault"></div><div id="note"></div></div>
+ <div id="standWrap"><div id="coachBar"><span class="k" id="coK"></span><span class="do" id="coDo"></span><span class="say" id="coSay"></span></div><canvas id="stand"></canvas><div id="fault"></div><div id="note"></div></div>
  <aside>
   <div class="cell"><canvas id="gauges"></canvas></div>
   <div class="cell" id="reads">
@@ -134,6 +142,7 @@ dialog::backdrop{background:#000b}dialog pre{white-space:pre-wrap;font:12px/1.5 
 <div id="card"><h4 id="cName"></h4><p id="cWhat"></p><p class="w" id="cWo"></p><small id="cCode"></small></div>
 <div id="report"><div class="code" id="rCode"></div><h2 id="rTitle"></h2><h5>WHAT HAPPENED</h5><p id="rHap"></p>
 <h5>THE NUMBER THAT CROSSED THE LINE</h5><p id="rNum"></p><h5>THE STEP THAT PREVENTS IT</h5><p id="rPrev"></p><button id="bReset2">RESET</button></div>
+<div id="coachRing"></div>
 <dialog id="dlg"><pre id="dlgPre"></pre><button id="bCopy">Copy</button> <button id="bClose">Close</button></dialog>
 <textarea id="promptText" hidden readonly>Build me an online rocket engine simulator: an interactive, visually stunning test stand where I operate a real engine start sequence, and where it can genuinely go wrong — it may refuse to light, it may chug, it may explode — all from first principles.
 
@@ -179,7 +188,7 @@ const CARDS = {
 const INCIDENTS = {
   NO_LIGHT:{title:"No ignition",happened:"The igniter burned out and the chamber never lit. A silent stand with a possibly live igniter is the most dangerous kind.",number:"O2 into chamber {ox} g/s · O/F {of} (flammable {lo}–{hi}) · misfire clock 30:00",prevent:"Get oxygen flowing while the igniter is burning, with a mixture inside the flammable range. After a misfire nobody approaches for 30 minutes: trust the clock, not your judgement."},
   HARD_START:{title:"Hard start",happened:"Oxygen filled the chamber before there was a flame. When the igniter fired, the whole charge burned at once at constant volume.",number:"Pc spike {pk} bar vs design {design} bar · O2 lead {lead} s",prevent:"Fire first, oxygen second. Confirm the igniter on chamber pressure, then ramp the main valve."},
-  ADIABATIC:{title:"Line fire — adiabatic compression",happened:"The main valve snapped open into a low-pressure dead line. The trapped gas was squeezed too fast to lose its heat and ignited the line in pure oxygen.",number:"T2 = {T2} °C (limit {lim} °C) · line {P1} → {P2} bar · valve {ramp} s",prevent:"Pre-charge the line with nitrogen to at least one third of upstream pressure, and open the main valve over 0.3 s or more."},
+  ADIABATIC:{title:"Line fire — adiabatic compression",happened:"The main valve snapped open into a low-pressure dead line. The trapped gas was squeezed too fast to lose its heat and ignited the line in pure oxygen.",number:"T2 = T1·(P2/P1)^((γ−1)/γ) = {T2} °C for {P1} → {P2} bar · the line lit on the way up, at {lim} °C · valve opened in {ramp} s",prevent:"Pre-charge the line with nitrogen to at least one third of upstream pressure, and open the main valve over 0.3 s or more."},
   CHUG:{title:"Chugging",happened:"The injector pressure drop was too small, so chamber pressure pushed back on the feed. Flow and pressure chased each other in a low-frequency oscillation.",number:"Injector ΔP = {stiff} % of Pc (minimum 20 %) · Pc swing {amp} %",prevent:"Fit the proper injector orifice plate so the drop stays above 20 % of chamber pressure."},
   BURST:{title:"Chamber burst",happened:"The throat was too small for the flow. Chamber pressure climbed past what the case could hold and it came apart.",number:"Pc {pc} bar > burst {burst} bar · throat Ø{dt} mm",prevent:"Size the throat for the mass flow (Pc = ṁ·c*/At) before anyone opens a valve, or lower the regulator."},
   BURN_THROUGH:{title:"Grain burn-through",happened:"The burn ran until the fuel port reached the chamber wall. With no paraffin left to protect it the flame cut through the case.",number:"Port Ø{port} mm reached grain Ø{od} mm after {tb} s of burn",prevent:"Shut down on the timer and on chamber pressure. Burn time is a design number, not a feeling."},
@@ -595,7 +604,7 @@ function step(dt){
   const mF2=s.fO+s.fN, PfN=(s.fO*P.R_O2+s.fN*P.R_N2)*T/P.lineV;
   s.Tslug+=s.Tslug*(0.4/1.4)*(PfN-Pf)/Pf-(s.Tslug-T)/P.slugTau*dt;
   if(s.Tslug>s.TslugPk)s.TslugPk=s.Tslug;
-  if(s.Tslug>P.autoIgnT&&s.fO/mF2>0.5&&PfN>3e5){end("ADIABATIC",{T2:fmt(s.Tslug-273.15,0),lim:fmt(P.autoIgnT-273.15,0),P1:fmt(s.pfAtOpen/1e5,1),P2:fmt(PfN/1e5,1),ramp:fmt(C.mvTime,2)});return;}
+  if(s.Tslug>P.autoIgnT&&s.fO/mF2>0.5&&PfN>3e5){end("ADIABATIC",{T2:fmt(P.Tamb*Math.pow(Math.max(C.regSet,PfN)/Math.max(s.pfAtOpen,1e4),0.2857)-273.15,0),lim:fmt(P.autoIgnT-273.15,0),P1:fmt(s.pfAtOpen/1e5,1),P2:fmt(Math.max(C.regSet,PfN)/1e5,0),ramp:fmt(C.mvTime,2)});return;}
   // publish
   s.Pb=Pb;s.Pu=Pu;s.Pf=PfN;s.Pm=Pm;s.xF=xF;s.xM=xM;s.qReg=qReg;s.qRv3=qRv3;s.qMv=qMv;s.qPurge=qPurge;s.qVent=qVent;s.qRv1=qRv1;s.qRd1=qRd1;s.qFo=qFo;s.qInj=qInj;s.qFuel=qFuel;s.oxD=oxD;
   s.rv3Lift=rvl;s.rv1Lift=rv1l; s.stiff=s.lit?(Pm-s.Pc)/s.Pc:NaN;
@@ -621,7 +630,7 @@ function step(dt){
   }
   if(rvl>0){s.rvT+=dt; if(s.rvT>P.regFailHold){end("REG_FAIL",{pu:fmt(Pu/1e5,1),set:fmt(P.rv3Set/1e5,0),pb:fmt(Pb/1e5,0)});return;}} else s.rvT=0;
   if(!C.power){ if(!s.lit&&s.mvOpen===0&&xF<0.05){s.safeT+=dt; if(s.safeT>P.safeHold){end("POWER_CUT",{ts:fmt(s.t-s.cutT,1),pf0:fmt(s.pfAtCut/1e5,1),xo:fmt(xF*100,0)});return;}} else s.safeT=0; }
-  else if(s.everLit&&!s.lit&&C.keyWasIn&&!C.arm&&C.vent&&!C.mvCmd&&!C.purge&&PfN<1.5e5&&s.purgeAfter>=P.purgeMin){
+  else if(s.everLit&&!s.lit&&C.keyWasIn&&!C.arm&&C.vent&&!C.mvCmd&&!C.purge&&PfN<1.5e5&&s.purgeAfter>=Math.min(P.purgeMin,1.0)){
     let grade=0;const notes=[];
     if(s.prePurge<2){grade++;notes.push("pre-fire purge was skipped");}
     if(!C.goPolled){grade++;notes.push("no GO / NO-GO poll");}
@@ -1009,6 +1018,7 @@ function syncSteps(){for(let i=0;i<stepEls.length;i++){setCls(stepEls[i],"cur",m
 function nextStep(){if(mode!=="guided"||S.frozen||stepIdx>=STEPS.length)return;if(!C.power){hint("No power: the console is dead.");return;}const s=STEPS[stepIdx];if(s[2])hint(s[2]);s[1]();stepIdx++;syncSteps();}
 function reset(newEng){
   if(newEng)eng=newEng;
+  {const r=$("rMv");if(r){r.value=PARAMS.mvOpenTime;if(r.oninput)r.oninput();}}
   C.hv3=false;C.mvCmd=false;C.purge=false;C.vent=true;C.arm=false;C.keyWasIn=false;C.regFailed=false;C.power=true;C.aborted=false;C.goPolled=false;
   S=newSim(eng);acc=0;stepIdx=0;endT=0;reportShown=false;anim.flash=0;anim.shock=0;anim.shake=0;anim.scorch=0;
   for(let i=0;i<NP;i++)PT[i].on=false;
@@ -1064,6 +1074,67 @@ function frame(now){
   uiT+=dt;if(uiT>0.1){uiT=0;updReadouts();syncButtons();}
   fpsAcc+=dt;fpsN++;if(fpsAcc>0.5){setT("fps",Math.round(fpsN/fpsAcc)+" fps");fpsAcc=0;fpsN=0;}
 }
+
+/* ---- 12 Demo coach: a pulsing ring on the next control, the line to say, and three chained scripts ---- */
+const COACH=(function(){
+  const ring=$("coachRing"),bar=$("coachBar"),kEl=$("coK"),doEl=$("coDo"),sayEl=$("coSay");
+  let on=true,si=0,ti=0,t0=0;
+  const segBtn=(id,attr,val)=>()=>{const c=$(id).children;for(let i=0;i<c.length;i++)if(c[i].getAttribute(attr)===val)return c[i];return $(id);};
+  const el=id=>()=>$(id);
+  const spaceSteps=(say)=>{const a=[];for(let i=0;i<STEPS.length;i++){a.push({space:i,say:say[i]||""});}return a;};
+  const SAY_B={0:"Now the right way. Open the manual valve.",1:"Purge with nitrogen — sweep the line.",3:"Close the vent. Pressure builds.",5:"Arm. Only the test conductor holds this key.",6:"QUICKLY x3 — Igniter first —",7:"QUICKLY — chamber pressure, not our eyes, confirms it lit.",8:"QUICKLY — then oxygen, slowly.",9:"Shut down.",10:"Purge again: flame out, oxygen swept.",11:"Vent to zero.",12:"Key out, in the pocket."};
+  const waits={ 2:()=>Math.max(0,2.3-S.prePurge), 9:()=>S.burnT>=7?0:7-S.burnT, 11:()=>Math.max(0,PARAMS.purgeMin+0.3-S.purgeAfter), 12:()=>Math.max(0,PARAMS.purgeMin+0.3-S.purgeAfter) };
+  const waitSay={2:"Two seconds of nitrogen before anything else.",9:"Chamber pressure, thrust, shock diamonds — all computed live. This table checks the simulation against closed-form answers: green means within one percent.",11:"Hold the purge: four seconds here, thirty on the real stand."};
+  const SCRIPTS=[
+   {name:"THE WRONG WAY",steps:[
+     {t:segBtn("modeSeg","data-m","free"),txt:"Click FREE",done:()=>mode==="free",say:"We're a student rocket team. This is our real engine on its test stand — rebuilt from the equations, by one prompt, in one HTML file."},
+     {t:el("rMv"),txt:"Drag OPEN TIME fully LEFT",done:()=>C.mvTime<=0.05,say:"Every valve here has a reason. Let me show you one. I set the main valve to snap open."},
+     {t:el("bHV3"),txt:"Click HV3",done:()=>C.hv3||!!S.ending,say:"Open the manual valve."},
+     {t:el("bMV"),txt:"Click MAIN VALVE",done:()=>C.mvCmd||!!S.ending,say:"Watch. I open the main valve — too fast."},
+     {t:el("stand"),txt:"DON'T TALK — let it burn",wait:true,done:()=>reportShown,say:""},
+     {t:el("bReset2"),txt:"Read the card, then click RESET",done:()=>!S.ending&&!S.frozen,say:"Oxygen slammed into an empty pipe. Adiabatic compression — hundreds of degrees. No spark needed. That is a real accident: it killed three people in 2007."}]},
+   {name:"THE RIGHT WAY",steps:[{t:segBtn("modeSeg","data-m","guided"),txt:"Click GUIDED",done:()=>mode==="guided",say:"Now the right way."}].concat(spaceSteps(SAY_B)).concat([
+     {t:el("stand"),txt:"Clean run — wait for the report card",wait:true,done:()=>reportShown||!!S.ending,say:""},
+     {t:el("bReset2"),txt:"Click RESET",done:()=>!S.ending&&!S.frozen,say:"A clean run is an ending too — with a report card."}])},
+   {name:"RANDOM ENGINE",steps:[
+     {t:segBtn("engSeg","data-e","random"),txt:"Click RANDOM ENGINE",done:()=>engKey==="random",say:"It also generates random engines — and most random engines are bad engines."}].concat(spaceSteps({0:"Same procedure. Read the note at the bottom: it tells you what is wrong with this design."})).concat([
+     {t:el("bAll"),txt:"Click ALL RESET to start over",done:()=>false,say:"One prompt. One file. Thank you."}])}
+  ];
+  function cur(){return SCRIPTS[si].steps[ti];}
+  function advance(){ti++;t0=performance.now();if(ti>=SCRIPTS[si].steps.length){si=(si+1)%SCRIPTS.length;ti=0;}}
+  function tick(){
+    bar.style.display=on?"flex":"none";if(!on){ring.style.display="none";return;}
+    let st=cur(),guard=0;
+    while(guard++<40){
+      if(st.space!==undefined){ if(S.ending||stepIdx>st.space||mode!=="guided"&&false){ if(S.ending){ // an ending interrupts the guided run: jump to the reset step of this script
+            const ss=SCRIPTS[si].steps;let j=ss.length-1;while(j>ti&&ss[j].t!==undefined&&ss[j].txt.indexOf("RESET")<0)j--;if(j>ti){ti=j;st=cur();break;} }
+          advance();st=cur();continue;} break; }
+      if(st.done&&st.done()){advance();st=cur();continue;} break; }
+    let target=null,txt="",say=st.say||"",waiting=false;
+    if(st.space!==undefined){const w=waits[st.space]?waits[st.space]():0;target=stepEls[st.space];
+      if(w>0.05){waiting=true;txt="WAIT "+w.toFixed(1)+" s — keep talking";say=waitSay[st.space]||say;}else txt="Press SPACE — "+(st.space+1)+" "+STEPS[st.space][0];}
+    else{target=st.t();txt=st.txt;waiting=!!st.wait;}
+    kEl.textContent="DEMO "+(si+1)+"/"+SCRIPTS.length+" · "+SCRIPTS[si].name+" · step "+(ti+1)+"/"+SCRIPTS[si].steps.length;
+    doEl.textContent=txt;sayEl.innerHTML=say?"<i>SAY</i>":"";if(say)sayEl.appendChild(document.createTextNode(say));
+    bar.className=waiting?"wait":"";
+    const r=target&&target.getBoundingClientRect();
+    if(r&&r.width>0&&r.bottom>0){ring.style.display="block";ring.className=waiting?"wait":"";ring.style.left=(r.left-6)+"px";ring.style.top=(r.top-6)+"px";ring.style.width=(r.width+12)+"px";ring.style.height=(r.height+12)+"px";}
+    else ring.style.display="none";
+  }
+  setInterval(tick,100);
+  return {toggle(){on=!on;$("bCoach").textContent=on?"COACH ON":"COACH OFF";setCls($("bCoach"),"on",on);},restart(){si=0;ti=0;},isOn:()=>on};
+})();
+$("bCoach").onclick=()=>COACH.toggle();
+function allReset(){
+  timeScale=1;{const c=$("tsSeg").children;for(let i=0;i<c.length;i++)c[i].classList.toggle("on",i===0);}
+  {const r=$("rReg");r.value=40;if(r.oninput)r.oninput();}
+  {const sel=$("sInj");sel.value=0;C.injIdx=0;}
+  if($("dlg").open)$("dlg").close();
+  $("modeSeg").children[0].click();$("engSeg").children[0].click();
+  COACH.restart();
+}
+$("bAll").onclick=allReset;
+window.addEventListener("keydown",e=>{if(e.target&&(e.target.tagName==="INPUT"||e.target.tagName==="SELECT"))return;if(e.key==="d"||e.key==="D")COACH.toggle();else if(e.key==="0")allReset();});
 reset(ENGINES.ast91);
 requestAnimationFrame(frame);
 }
