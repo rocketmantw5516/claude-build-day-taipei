@@ -66,9 +66,9 @@ select{background:var(--panel2);color:var(--text);border:1px solid var(--line);b
 pointer-events:none;display:none;box-shadow:0 8px 30px #000a}
 #card h4{margin:0 0 4px;font:700 12px var(--mono);color:var(--cyan)}#card p{margin:3px 0;font-size:12px}
 #card p.w{color:var(--amber)}#card small{color:var(--muted);font:10px var(--mono)}
-#report{position:fixed;z-index:30;right:24px;top:70px;width:min(460px,90vw);background:#0d1524fa;border:2px solid var(--red);border-radius:10px;
+#report{position:fixed;z-index:30;right:24px;top:70px;width:min(470px,90vw);background:#0d1524;border:2px solid var(--red);border-radius:10px;
 padding:16px 18px;transform:translateX(120%);transition:transform .5s cubic-bezier(.2,.9,.3,1);box-shadow:0 12px 50px #000c}
-#report.show{transform:none}#report.good{border-color:var(--green)}
+#report.show{transform:none;box-shadow:0 0 0 3000px #05070db0,0 12px 50px #000c}#report.good{border-color:var(--green)}
 #report h2{margin:0 0 2px;font-size:20px}#report .code{font:11px var(--mono);color:var(--muted)}
 #report h5{margin:10px 0 2px;font:600 10px var(--mono);color:var(--muted);letter-spacing:.1em}
 #report p{margin:0;font-size:13px}#rNum{font:600 13px var(--mono)!important;color:var(--amber)}
@@ -912,7 +912,7 @@ const CARDS = {
   MV1: {
     name: "MAIN VALVE",
     what: "Air-powered valve that lets oxygen into the engine. It opens slowly, over 0.4–0.8 s, and shuts by itself if power is lost.",
-    without: "Snap it open and the gas trapped in the dead pipe is squeezed so fast it heats up like air in a bike pump. 40 bar into a 1 bar pipe gives 568 °C — enough to light the line."
+    without: "Snap it open and the gas trapped in the dead pipe is squeezed so fast it heats up like air in a bike pump. 40 bar into a 1 bar pipe gives about 565 °C — enough to light the line."
   },
   NV1: {
     name: "NEEDLE VALVE",
@@ -998,7 +998,7 @@ const INCIDENTS = {
     title: "Line fire",
     happened: "Oxygen slammed into a low-pressure dead pipe and squeezed the gas until it was hot enough to light the line. A 2007 cold-flow test at Scaled Composites killed three — no igniter, no fuel.",
     number: "T2 = {T2} °C  (limit 400 °C)",
-    prevent: "Do both: pre-fill the line with nitrogen to at least 1/3 of upstream pressure, and open the main valve over 0.3 s or more. 40 bar into 1 bar gives 568 °C; pre-filled to 15 bar, only 115 °C."
+    prevent: "Do both: pre-fill the line with nitrogen to at least 1/3 of upstream pressure, and open the main valve over 0.3 s or more. 40 bar into 1 bar gives about 565 °C; pre-filled to 15 bar, only 115 °C."
   },
   CHUG: {
     title: "Chug",
@@ -1747,7 +1747,7 @@ const COACH=(function(){
     doEl.textContent=txt;sayEl.innerHTML=say?"<i>SAY</i>":"";if(say)sayEl.appendChild(document.createTextNode(say));
     bar.className=waiting?"wait":"";
     const r=target&&target.getBoundingClientRect();
-    if(r&&r.width>0&&r.bottom>0){ring.style.display="block";ring.className=waiting?"wait":"";ring.style.left=(r.left-6)+"px";ring.style.top=(r.top-6)+"px";ring.style.width=(r.width+12)+"px";ring.style.height=(r.height+12)+"px";}
+    if(r&&r.width>0&&r.bottom>0){ring.style.display="block";ring.style.opacity=(S.ending&&target===$("stand"))?"0.2":"1";ring.className=waiting?"wait":"";ring.style.left=(r.left-6)+"px";ring.style.top=(r.top-6)+"px";ring.style.width=(r.width+12)+"px";ring.style.height=(r.height+12)+"px";}
     else ring.style.display="none";
   }
   setInterval(tick,100);
