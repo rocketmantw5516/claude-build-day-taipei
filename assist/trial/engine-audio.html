@@ -1,0 +1,2086 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rocket Engine Test Stand</title>
+<style>
+:root{--bg:#070a12;--panel:#101725;--panel2:#0c111c;--line:#232d44;--text:#e9eef7;--muted:#8b98b2;
+--amber:#ffb347;--flame:#ff7a1a;--cyan:#5fd3ff;--green:#6ee7a0;--red:#ff5c6c;--n2:#b58cff;
+--mono:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:13px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;
+display:grid;grid-template-rows:auto 1fr auto;overflow:hidden}
+header{display:flex;gap:10px;align-items:center;padding:6px 12px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:16px;text-shadow:0 0 14px #ffb34755;margin:0 8px 0 0;letter-spacing:.08em;color:var(--amber)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;border-right:1px solid var(--line);border-radius:0}
+.seg button:last-child{border-right:0}
+button{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 10px;
+font:600 11px var(--mono);letter-spacing:.04em;cursor:pointer}
+button:hover{border-color:var(--cyan)}button.on{background:#12324a;color:var(--cyan);border-color:var(--cyan)}
+button.hot{background:#4a2a08;color:var(--amber);border-color:var(--amber)}
+button:disabled{opacity:.35;cursor:not-allowed}
+#lamp{font:700 12px var(--mono);padding:4px 12px;border-radius:12px;border:1px solid var(--line);margin-left:auto}
+#lamp.SAFE{color:var(--green);border-color:var(--green)}#lamp.ARMED{color:var(--amber);border-color:var(--amber)}
+#lamp.FIRING{color:#fff;background:var(--flame);border-color:var(--flame)}#lamp.INCIDENT{color:#fff;background:var(--red);border-color:var(--red)}
+#fps{font:11px var(--mono);color:var(--muted);min-width:52px;text-align:right}
+main{display:grid;grid-template-columns:minmax(0,1fr) clamp(430px,33vw,640px);min-height:0}
+#standWrap{position:relative;min-height:0;min-width:0;border-right:1px solid var(--line)}
+#stand{position:absolute;inset:0;width:100%;height:100%;display:block;transition:filter .8s}
+#stand.dead{filter:grayscale(.9) brightness(.7)}
+#note{position:absolute;left:10px;bottom:6px;right:10px;font:11px var(--mono);color:var(--muted);pointer-events:none}
+#fault{position:absolute;left:10px;top:8px;font:700 13px var(--mono);color:#fff;background:var(--red);padding:4px 10px;border-radius:4px;display:none}
+aside{display:grid;grid-template-rows:140px auto minmax(150px,1fr) auto auto;min-height:0;background:var(--panel2)}
+aside canvas{width:100%;height:100%;display:block}
+.cell{min-height:0;border-bottom:1px solid var(--line);position:relative}
+#reads{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line)}
+#reads div{background:var(--panel2);padding:3px 8px 2px}
+#reads small{white-space:nowrap;overflow:hidden;display:block;color:var(--muted);font-size:9.5px;letter-spacing:.06em}
+#reads b{white-space:nowrap;display:block;overflow:hidden;text-overflow:clip;font:600 15.5px var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+#reads div{border-left:2px solid transparent}#reads div:nth-child(-n+4){border-left-color:var(--flame)}#reads div:nth-child(n+5):nth-child(-n+8){border-left-color:var(--cyan)}
+#reads div:nth-child(n+9):nth-child(-n+12){border-left-color:var(--amber)}#reads div:nth-child(n+13){border-left-color:var(--green)}
+#reads div:nth-child(1) b{color:var(--amber);font-size:19px}#reads b.bad{color:var(--red)}
+#standWrap{background:radial-gradient(120% 90% at 62% 48%,#0e1730 0%,#070a12 62%)}
+header{background:linear-gradient(180deg,#141d30,#0e1524);box-shadow:0 1px 0 #000,0 6px 18px #0006;z-index:2}
+footer{background:linear-gradient(0deg,#141d30,#0e1524);box-shadow:0 -6px 18px #0006}
+aside{box-shadow:inset 1px 0 0 #000,inset 12px 0 24px -18px #000}
+table td{font-variant-numeric:tabular-nums}td.ok{text-shadow:0 0 10px #6ee7a066}
+table{width:100%;border-collapse:collapse;font:11px var(--mono)}
+th,td{padding:3px 8px;text-align:right;border-bottom:1px solid var(--line)}th{color:var(--muted);font-weight:500}
+td:first-child,th:first-child{text-align:left}
+.ok{color:var(--green)}.bad{color:var(--red)}.na{color:var(--muted)}
+#thermo{min-height:58px;padding:5px 8px;font:11px var(--mono);color:var(--muted)}#thermo b{color:var(--text)}#thermo em{color:var(--amber);font-style:normal}
+footer{background:var(--panel);border-top:1px solid var(--line);padding:6px 12px}
+#console{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#console label{font:11px var(--mono);color:var(--muted);display:inline-flex;align-items:center;gap:5px}
+#console label b{color:var(--text);min-width:34px;display:inline-block}
+input[type=range]{width:90px;accent-color:var(--cyan)}
+select{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:4px;font:11px var(--mono);padding:3px}
+#bAbort{margin-left:auto;background:#5a0f18;border-color:var(--red);color:#fff;font-size:15px;padding:8px 26px;letter-spacing:.15em}
+#bAbort:hover{background:var(--red)}
+#seq{display:flex;gap:4px;margin-top:6px;align-items:center;flex-wrap:wrap}
+#seq span.st{font:10px var(--mono);padding:3px 7px;border:1px solid var(--line);border-radius:4px;color:var(--muted)}
+#seq span.st.done{color:var(--green);border-color:#2a5a44}
+#seq span.st.cur{color:#111;background:var(--amber);border-color:var(--amber);font-weight:700}
+#hint{font:11px var(--mono);color:var(--amber);margin-left:8px}
+#card{position:fixed;z-index:20;max-width:300px;background:#0d1524f2;border:1px solid var(--cyan);border-radius:8px;padding:9px 11px;
+pointer-events:none;display:none;box-shadow:0 8px 30px #000a}
+#card h4{margin:0 0 4px;font:700 12px var(--mono);color:var(--cyan)}#card p{margin:3px 0;font-size:12px}
+#card p.w{color:var(--amber)}#card small{color:var(--muted);font:10px var(--mono)}
+#report{position:fixed;z-index:30;right:24px;top:70px;width:min(460px,90vw);background:#0d1524fa;border:2px solid var(--red);border-radius:10px;
+padding:16px 18px;transform:translateX(120%);transition:transform .5s cubic-bezier(.2,.9,.3,1);box-shadow:0 12px 50px #000c}
+#report.show{transform:none}#report.good{border-color:var(--green)}
+#report h2{margin:0 0 2px;font-size:20px}#report .code{font:11px var(--mono);color:var(--muted)}
+#report h5{margin:10px 0 2px;font:600 10px var(--mono);color:var(--muted);letter-spacing:.1em}
+#report p{margin:0;font-size:13px}#rNum{font:600 13px var(--mono)!important;color:var(--amber)}
+#report button{margin-top:14px;font-size:13px;padding:7px 22px}
+#coachRing{position:fixed;z-index:40;pointer-events:none;border:3px solid var(--amber);border-radius:10px;box-shadow:0 0 0 0 #ffb34788,0 0 22px #ffb347aa;animation:coachPulse 1.1s ease-out infinite;display:none}
+#coachRing.wait{border-color:var(--cyan);box-shadow:0 0 18px #5fd3ff88;animation:none;border-style:dashed}
+@keyframes coachPulse{0%{box-shadow:0 0 0 0 #ffb347cc,0 0 22px #ffb347aa}100%{box-shadow:0 0 0 22px #ffb34700,0 0 22px #ffb347aa}}
+@media(prefers-reduced-motion:reduce){#coachRing{animation:none}}
+#coachBar{position:absolute;left:10px;top:8px;right:10px;z-index:5;display:none;gap:14px;align-items:baseline;flex-wrap:wrap;background:#0b1220e6;border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:8px;padding:7px 12px;pointer-events:none}
+#coachBar .k{font:700 10px var(--mono);letter-spacing:.12em;color:var(--muted)}#coachBar .do{font:700 17px var(--mono);color:var(--amber)}#coachBar.wait .do{color:var(--cyan)}
+#coachBar .say{flex-basis:100%;font:13px/1.35 system-ui,sans-serif;color:var(--text)}#coachBar .say i{font-style:normal;color:var(--cyan);font:700 10px var(--mono);letter-spacing:.12em;margin-right:8px}
+#bAll{border-color:var(--red);color:#ffd0d5}
+button[data-zh]::after{content:attr(data-zh);display:block;font:500 10.5px system-ui,'PingFang TC',sans-serif;letter-spacing:.06em;color:var(--muted);margin-top:1px}
+button.on[data-zh]::after,button.hot[data-zh]::after{color:inherit;opacity:.85}#bAbort[data-zh]::after{color:#ffd0d5;letter-spacing:.2em}
+#macros{position:absolute;right:12px;bottom:34px;z-index:6;display:flex;gap:8px;align-items:stretch}
+#macros .mk{font:700 10px var(--mono);letter-spacing:.12em;color:var(--muted);align-self:center;margin-right:2px}
+#macros button{padding:8px 14px;font-size:12px;background:#0b1220e6;border-color:#33415f;min-width:118px;text-align:left}
+#macros button b{display:inline-block;width:20px;color:var(--amber)}#macros button.run{border-color:var(--amber);background:#2a1c08;color:var(--amber)}
+#macros #mac2{border-color:#7a2a33}#macros #mac2 b{color:var(--red)}
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;max-width:760px;width:90vw}
+dialog::backdrop{background:#000b}dialog pre{white-space:pre-wrap;font:12px/1.5 var(--mono);max-height:60vh;overflow:auto;margin:0 0 10px}
+@media(max-width:900px){main{grid-template-columns:1fr}body{overflow:auto}#standWrap{height:60vh}}
+</style></head>
+<body>
+<header>
+ <h1>TEST STAND 91</h1>
+ <span class="seg" id="engSeg"></span>
+ <span class="seg" id="modeSeg"><button data-zh="引導模式" data-m="guided" class="on">GUIDED</button><button data-zh="自由操作" data-m="free">FREE</button></span>
+ <span id="lamp" class="SAFE">SAFE</span>
+ <span id="fps">– fps</span>
+ <button data-zh="按鍵教練" id="bCoach" class="on">COACH ON</button><button data-zh="看提示詞" id="bPrompt">SHOW THE PROMPT</button><button data-zh="全部重置" id="bAll">ALL RESET</button>
+</header>
+<main>
+ <div id="standWrap"><div id="macros"><span class="mk">AUTO DEMO 自動示範</span><button id="mac1" data-zh="正確點火 · 一次成功"><b>▶1</b>CLEAN START</button><button id="mac2" data-zh="主閥開太快 · 管路起火"><b>▶2</b>SNAP-OPEN VALVE</button><button id="mac3" data-zh="先給氧、後點火 · 硬啟動"><b>▶3</b>OXYGEN BEFORE FIRE</button></div><div id="coachBar"><span class="k" id="coK"></span><span class="do" id="coDo"></span><span class="say" id="coSay"></span></div><canvas id="stand"></canvas><div id="fault"></div><div id="note"></div></div>
+ <aside>
+  <div class="cell"><canvas id="gauges"></canvas></div>
+  <div class="cell" id="reads">
+   <div><small>THRUST N</small><b id="oF">–</b></div><div><small>O/F</small><b id="oOF">–</b></div>
+   <div><small>Isp s</small><b id="oIsp">–</b></div><div><small>c* m/s</small><b id="oCs">–</b></div>
+   <div><small>Tc K</small><b id="oTc">–</b></div><div><small>EXIT MACH</small><b id="oMe">–</b></div>
+   <div><small>Pe / Pa</small><b id="oPe">–</b></div><div><small>INJ ΔP / Pc %</small><b id="oSt">–</b></div>
+   <div><small>PORT Ø mm</small><b id="oPort">–</b></div><div><small>LINE SLUG °C now/pk</small><b id="oSlug">–</b></div>
+   <div><small>ṁ ox g/s</small><b id="oOx">–</b></div><div><small>SIM TIME s</small><b id="oT">–</b></div>
+   <div><small>ṁ FUEL g/s</small><b id="oFu">–</b></div><div><small>REGRESS mm/s</small><b id="oRd">–</b></div>
+   <div><small>G ox kg/m²s</small><b id="oG">–</b></div><div><small>WEB LEFT mm</small><b id="oWeb">–</b></div>
+   <div><small>THRUST COEFF</small><b id="oCF">–</b></div><div><small>IMPULSE N·s</small><b id="oImp">–</b></div>
+   <div><small>BURN TIME s</small><b id="oBt">–</b></div><div><small>PEAK Pc bar</small><b id="oPk">–</b></div>
+  </div>
+  <div class="cell"><canvas id="plots"></canvas></div>
+  <div class="cell"><table><thead><tr><th>VERIFY (two independent routes)</th><th>sim</th><th>check</th><th>err %</th></tr></thead><tbody>
+   <tr><td>port r: Euler vs closed form mm</td><td id="v0a">–</td><td id="v0b">–</td><td id="v0e" class="na">–</td></tr>
+   <tr><td>fuel: ∫ṁ dt vs geometry g</td><td id="v1a">–</td><td id="v1b">–</td><td id="v1e" class="na">–</td></tr>
+   <tr><td>O₂: gauge vs flow meter g</td><td id="v2a">–</td><td id="v2b">–</td><td id="v2e" class="na">–</td></tr>
+  </tbody></table></div>
+  <div id="thermo">THERMOCHEMISTRY · <em>CEA-derived fits</em> (curve fits to published NASA CEA equilibrium results — not a CEA run) · c* <b id="tCs">–</b> · γ <b id="tG">–</b> · T<sub>flame</sub> <b id="tT">–</b> at O/F <b id="tOF">–</b></div>
+ </aside>
+</main>
+<footer>
+ <div id="console">
+  <button data-zh="手動隔離閥" id="bHV3" data-code="HV3">HV3 MANUAL</button>
+  <button data-zh="保險鑰匙" id="bARM" data-code="ARM">ARM KEY</button>
+  <button data-zh="點火器" id="bIGN" data-code="IGN">IGNITER</button>
+  <button data-zh="主氧閥" id="bMV" data-code="MV1">MAIN VALVE</button>
+  <label data-code="NV1">主閥開啟時間 open time <input type="range" id="rMv" min="0.02" max="1" step="0.01" value="0.5"><b id="vMv">0.50 s</b></label>
+  <button data-zh="氮氣吹除" id="bPV3" data-code="PV3">PURGE</button>
+  <button data-zh="排氣閥" id="bPV1" data-code="PV1">VENT</button>
+  <label data-code="PR1">調壓 REG <input type="range" id="rReg" min="20" max="60" step="1" value="40"><b id="vReg">40 bar</b></label>
+  <label data-code="IP1">噴注孔板 IP1 <select id="sInj"></select></label>
+  <span class="seg" id="tsSeg"><button data-zh="正常速" data-ts="1" class="on">1×</button><button data-zh="慢動作" data-ts="0.25">¼×</button><button data-zh="超慢" data-ts="0.05">1/20×</button></span>
+  <button data-zh="聲音" id="bSnd">SOUND OFF</button>
+  <button data-zh="故障:調壓器壞掉" id="bRegFail" data-code="PR1">FAULT: REGULATOR</button>
+  <button data-zh="故障:斷電" id="bPwr" data-code="PV1">FAULT: POWER CUT</button>
+  <button data-zh="重置" id="bReset">RESET</button>
+  <button data-zh="緊急中止" id="bAbort" data-code="ABORT">ABORT</button>
+ </div>
+ <div id="seq"></div>
+</footer>
+<div id="card"><h4 id="cName"></h4><p id="cWhat"></p><p class="w" id="cWo"></p><small id="cCode"></small></div>
+<div id="report"><div class="code" id="rCode"></div><h2 id="rTitle"></h2><h5>WHAT HAPPENED</h5><p id="rHap"></p>
+<h5>THE NUMBER THAT CROSSED THE LINE</h5><p id="rNum"></p><h5>THE STEP THAT PREVENTS IT</h5><p id="rPrev"></p><button data-zh="重置" id="bReset2">RESET</button></div>
+<div id="coachRing"></div>
+<dialog id="dlg"><pre id="dlgPre"></pre><button id="bCopy">Copy</button> <button id="bClose">Close</button></dialog>
+<textarea id="promptText" hidden readonly>Build me an online rocket engine simulator: an interactive, visually stunning test stand where I operate a real engine start sequence, and where it can genuinely go wrong — it may refuse to light, it may chug, it may explode — all from first principles.
+
+The default engine is real: our student team's 350 N paraffin and gaseous-oxygen hybrid. Let me also choose other engines for the same stand: a classic conical nozzle, a large bell nozzle like the ones everybody has seen on launch vehicles, a small pressure-fed liquid oxygen and kerosene engine, and a "random engine" button that generates a new chamber and nozzle shape each time — some of them bad designs that will overpressure, separate or fail to light.
+
+Draw the stand as one big animated piping diagram wrapped around a cutaway of the engine, like a control-room mimic panel readable from across a room: oxygen bottle and regulator, relief valve and burst disc, manual isolation valve, filter, a slow-opening main valve, a nitrogen purge line with two check valves in series, a fail-open vent, igniter, ARM key, and gauges on the bottle, the manifold and the chamber. Fluid visibly moves through the pipes, coloured by what it is; valves turn when I click them; gauges swing. Draw the engine in millimetres from its real profile — ours is chamber 80 bore by 140 long, grain 76 outer with a 25 port and 120 long, convergent 31.75, throat 16.51, divergent 15.15, exit 26.66 — and draw the plume from the physics: shock diamonds whose spacing follows exit Mach number, a plume that pinches when over-expanded and balloons when under-expanded, and flow separation inside a bell that is too big for sea level.
+
+Compute it live, simply but honestly, nothing pre-computed: a small lumped network of volumes joined by valves and orifices; fuel regression r_dot = a * G_ox^n with the oxidizer-to-fuel ratio drifting as the port opens; chamber pressure from the mass balance through a choked throat; thrust from the ideal-rocket relations. Take characteristic velocity, gamma and flame temperature as functions of O/F from curve fits to published NASA CEA equilibrium results, and say so on screen in a small "thermochemistry" readout — labelled as CEA-derived fits, not as a live CEA run.
+
+The situations are the point. Each must arise from the equations and the order I do things in, not from a script: igniter fired with no oxidizer, or mixture outside the flammable range, so it does not light — and then the 30-minute misfire rule; oxygen opened before the igniter, so a hard-start spike; main valve snapped open into a line not pre-charged with nitrogen, so adiabatic compression T2 = T1 * (P2/P1)^((gamma-1)/gamma) lights the line; injector pressure drop under 20 percent of chamber pressure, so it chugs; throat too small for the flow, so the chamber bursts past its design pressure; burn too long, so the grain burns through to the wall; no purge after shutdown, so the flame creeps back into the injector; regulator failure, so the relief valve lifts; power cut, so the fail-safe valve positions save the stand. A clean run is also an ending, with a report card. Every failure plays out on screen — flash, debris, smoke, silence — then freezes into a short incident report: what happened, the number that crossed the line, and the step that would have prevented it.
+
+Every control teaches. Hovering or operating any valve, switch or gauge shows a short plain-language card: what it is for, and what goes wrong without it.
+
+Two modes: a guided countdown through the real sequence — purge, close vent, final go / no-go, ARM key, igniter, chamber pressure confirms ignition, main valve ramp, burn, shutdown, purge, vent, key out — and free play where I may do anything in any order. ABORT is always live.
+
+Beside the view, plot chamber pressure, thrust and bottle pressure against time, with a small verification table comparing the running simulation against independent answers, green within one percent: port radius integrated versus its closed form, fuel burned versus paraffin missing from the grain geometry, oxygen drained versus integrated valve flow. Every row must be able to fail.
+
+Synthesize engine sound from chamber pressure with the Web Audio API, starting muted. Add a SHOW THE PROMPT button that displays this exact prompt. Build it as a single self-contained HTML file with no external libraries or assets, drawn with Canvas 2D in a dark control-room style, running at 60 fps, with clean, correct code that works perfectly the first time it is opened.</textarea>
+<script>
+'use strict';
+/* ==== FX ART PACK (assist/fx.js) ====
+   Pure Canvas 2D drawing functions in the STYLE-REFERENCE palette.
+   No DOM access, no libraries, no per-frame array/object allocation
+   (particle pools are typed arrays created once inside the state object).
+   Works as <script src="fx.js"> or pasted straight into engine.html.
+   Only names introduced: FX_PAL, _fx* helpers, and the public functions below.
+
+   drawPlume(ctx, {x,y,exitR,mach,peOverPa,thrust01,t, dir?, bellLen?})
+   fxExplosionCreate() / fxExplosionStart(state,x,y) / fxExplosionDraw(ctx,state,dt)
+   fxMisfireCreate()   / fxMisfireStart(state,x,y)   / fxMisfireDraw(ctx,state,dt)
+   drawPipeFlow(ctx, points, {flow01,fluid,t, width?, phase?})
+   drawValve(ctx, x, y, {kind,open01,failSafe,hot, angle?,size?,label?,glow?})
+   drawGauge(ctx, x, y, r, {value,max,redline,label,unit})
+   drawHeatHaze(ctx, {x,y,w,h,intensity01,t})
+   fxShake(thrust01, t, out?) -> {dx,dy}
+*/
+const FX_PAL = Object.freeze({
+  bg: '#070a12', panel: '#101725', panel2: '#0c111c', line: '#232d44',
+  text: '#e9eef7', muted: '#8b98b2',
+  amber: '#ffb347', flame: '#ff7a1a', cyan: '#5fd3ff', green: '#6ee7a0', red: '#ff5c6c',
+  white: '#fff6e6', smoke: '#566074', metal: '#3a465f',
+  fluid: Object.freeze({ gox: '#5fd3ff', n2: '#6ee7a0', lox: '#8fb0ff', kerosene: '#ffb347', hot: '#ff7a1a', vent: '#8b98b2' }),
+  dash: Object.freeze([10, 8]), nodash: Object.freeze([]),
+  mono: '"SF Mono","JetBrains Mono",Menlo,Consolas,monospace'
+});
+function _fxClamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+
+/* ---------------------------------------------------------------------------
+   drawPlume(ctx, {x, y, exitR, mach, peOverPa, thrust01, t, dir?, bellLen?})
+   x,y      nozzle exit centre (px).  exitR exit radius (px).  dir flow angle (rad, default 0 = +x).
+   mach     exit Mach number -> shock-cell length ~ 2*exitR*sqrt(M^2-1)*(Pe/Pa)^0.4
+   peOverPa <1 over-expanded: plume pinches, diamonds sit at the pinches, close together
+            >1 under-expanded: plume balloons, diamonds sit at the necks
+            <0.4 with bellLen>0: flow separation — a narrow ragged jet starts INSIDE the bell
+   thrust01 0..1 overall intensity/length.  t seconds (flicker only).  Draws nothing at thrust01≈0.
+--------------------------------------------------------------------------- */
+function _fxPlumeR(s, R, lam, a, L, t, sep) {
+  const u = s / L;
+  let r = R;
+  if (s >= 0) {
+    const c = Math.sin(Math.PI * s / lam);
+    r *= 1 + a * c * c * Math.exp(-s / (2.5 * lam));
+    if (u > 0.55) { const q = (u - 0.55) / 0.45; r *= 1 - q * q; }
+  } else {
+    r *= 1 + 0.35 * s / (R * 3);           // jet narrows going upstream into the bell
+  }
+  r *= 1 + 0.04 * Math.sin(t * 47 + s * 0.31) + 0.03 * Math.sin(t * 31 - s * 0.17);
+  if (sep > 0) r += R * 0.09 * sep * Math.sin(t * 41 + s * 0.33) * Math.sin(t * 17 + s * 0.13);
+  return r > 0 ? r : 0;
+}
+function _fxPlumePath(ctx, s0, L, R, lam, a, t, sep, k, spread) {
+  const N = 36;
+  ctx.beginPath();
+  for (let i = 0; i <= N; i++) {
+    const s = s0 + (L - s0) * i / N;
+    const r = _fxPlumeR(s, R, lam, a, L, t, sep) * k + (s > 0 ? s * spread * (1 - s / L) : 0);
+    if (i === 0) ctx.moveTo(s, -r); else ctx.lineTo(s, -r);
+  }
+  for (let i = N; i >= 0; i--) {
+    const s = s0 + (L - s0) * i / N;
+    const r = _fxPlumeR(s, R, lam, a, L, t + 3.7, sep) * k + (s > 0 ? s * spread * (1 - s / L) : 0);
+    ctx.lineTo(s, r);
+  }
+  ctx.closePath();
+}
+function drawPlume(ctx, p) {
+  const th = _fxClamp(p.thrust01 || 0, 0, 1);
+  if (th < 0.003) return;
+  const R0 = p.exitR, t = p.t || 0;
+  const M = Math.max(1.02, isFinite(p.mach) ? p.mach : 2);
+  const pr = _fxClamp(isFinite(p.peOverPa) ? p.peOverPa : 1, 0.05, 20);
+  const bellLen = p.bellLen || 0;
+  const sep = (pr < 0.4 && bellLen > 0) ? _fxClamp((0.4 - pr) / 0.3, 0, 1) : 0;
+  const R = R0 * (1 - 0.5 * sep);
+  const lnp = Math.log(pr);
+  const lam = _fxClamp(0.9 * 2 * R * Math.sqrt(M * M - 1) * Math.pow(pr, 0.4), R * 0.9, R * 14);
+  const a = lnp >= 0 ? Math.min(1.4, 0.55 * lnp) : -Math.min(0.55, 0.5 * -lnp);
+  const L = (R0 * 8 + 3.2 * lam) * (0.35 + 0.65 * th);
+  const s0 = -bellLen * 0.6 * sep;
+
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  if (p.dir) ctx.rotate(p.dir);
+  if (sep > 0) {
+    // recirculation zone: dark, cold ambient air sucked in between the detached jet and the bell wall
+    // (wall assumed ~linear from 0.35*exitR at the throat to exitR at the lip)
+    for (let sgn = -1; sgn <= 1; sgn += 2) {
+      ctx.beginPath();
+      for (let i = 0; i <= 12; i++) { const q = s0 * (1 - i / 12); ctx.lineTo(q, sgn * R0 * (1 + 0.65 * q / bellLen) * 0.96); }
+      for (let i = 12; i >= 0; i--) { const q = s0 * (1 - i / 12); ctx.lineTo(q, sgn * _fxPlumeR(q, R, lam, a, L, t, 0) * 0.95); }
+      ctx.closePath();
+      ctx.globalAlpha = 0.85 * sep; ctx.fillStyle = '#01030a'; ctx.fill();
+      ctx.globalAlpha = 0.30 * sep; ctx.fillStyle = FX_PAL.cyan; ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  ctx.globalCompositeOperation = 'lighter';
+
+  // outer mixing layer
+  let g = ctx.createLinearGradient(s0, 0, L, 0);
+  g.addColorStop(0, 'rgba(255,122,26,0.55)'); g.addColorStop(0.5, 'rgba(255,90,20,0.28)'); g.addColorStop(1, 'rgba(255,60,10,0)');
+  ctx.globalAlpha = 0.75 * th;
+  ctx.shadowColor = FX_PAL.flame; ctx.shadowBlur = 24;
+  ctx.fillStyle = g;
+  _fxPlumePath(ctx, s0, L, R, lam, a, t, sep, 1.18, 0.10);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  // body
+  g = ctx.createLinearGradient(s0, 0, L * 0.9, 0);
+  g.addColorStop(0, 'rgba(255,190,90,0.9)'); g.addColorStop(0.6, 'rgba(255,140,40,0.4)'); g.addColorStop(1, 'rgba(255,120,30,0)');
+  ctx.globalAlpha = 0.85 * th;
+  ctx.fillStyle = g;
+  _fxPlumePath(ctx, s0, L * 0.9, R, lam, a, t * 1.3, sep, 0.8, 0.03);
+  ctx.fill();
+  // white-hot core
+  g = ctx.createLinearGradient(s0, 0, L * 0.7, 0);
+  g.addColorStop(0, 'rgba(255,250,235,0.95)'); g.addColorStop(0.5, 'rgba(255,225,170,0.5)'); g.addColorStop(1, 'rgba(255,200,120,0)');
+  ctx.globalAlpha = th;
+  ctx.fillStyle = g;
+  _fxPlumePath(ctx, s0, L * 0.7, R, lam, a, t * 1.7, sep, 0.42, 0);
+  ctx.fill();
+
+  // shock diamonds (Mach disks): at pinches when over-expanded, at necks when under-expanded
+  const dI = _fxClamp(Math.abs(lnp) * 1.4 + 0.12, 0, 1);
+  ctx.fillStyle = FX_PAL.white;
+  ctx.shadowColor = FX_PAL.amber; ctx.shadowBlur = 14;
+  for (let k = 1; k <= 7; k++) {
+    const s = lam * (a < 0 ? k - 0.5 : k);
+    if (s > L * 0.8) break;
+    const rr = _fxPlumeR(s, R, lam, a, L, t, 0);
+    const h = rr * 0.62, w = Math.min(lam * 0.24, rr * 1.6) * (1 + 0.08 * Math.sin(t * 40 + k));
+    ctx.globalAlpha = th * dI * Math.exp(-(k - 1) * 0.42) * (0.85 + 0.15 * Math.sin(t * 53 + k * 2.1));
+    ctx.beginPath();
+    ctx.moveTo(s - w, 0); ctx.lineTo(s, -h); ctx.lineTo(s + w * 1.5, 0); ctx.lineTo(s, h);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+
+  // separation: bright ragged shear-layer edge on the detached jet, then ambient air curling back in
+  if (sep > 0) {
+    const e1 = R0 * 1.2;
+    ctx.strokeStyle = FX_PAL.white; ctx.lineWidth = 2.2; ctx.lineJoin = 'round';
+    ctx.shadowColor = FX_PAL.amber; ctx.shadowBlur = 10; ctx.globalAlpha = 0.9 * sep * th;
+    for (let sgn = -1; sgn <= 1; sgn += 2) {
+      ctx.beginPath();
+      for (let i = 0; i <= 16; i++) { const q = s0 + (e1 - s0) * i / 16; ctx.lineTo(q, sgn * _fxPlumeR(q, R, lam, a, L, t + (sgn > 0 ? 3.7 : 0), sep) * 1.05); }
+      ctx.stroke();
+    }
+    // detachment point ticks on the wall
+    ctx.shadowBlur = 0; ctx.strokeStyle = FX_PAL.cyan; ctx.lineWidth = 2; ctx.globalAlpha = 0.9 * sep;
+    ctx.globalCompositeOperation = 'source-over';
+    const wr = R0 * (1 + 0.65 * s0 / bellLen);
+    ctx.beginPath(); ctx.moveTo(s0, -wr); ctx.lineTo(s0, -wr * 0.72); ctx.moveTo(s0, wr); ctx.lineTo(s0, wr * 0.72); ctx.stroke();
+    ctx.strokeStyle = FX_PAL.cyan; ctx.lineWidth = 1.6; ctx.globalAlpha = 0.75 * sep;
+    const cx = -bellLen * 0.22, cy = (R0 + R) * 0.5, cr = Math.max(2, (R0 - R) * 0.42);
+    for (let sgn = -1; sgn <= 1; sgn += 2) {
+      const a0 = t * 5 * sgn;
+      ctx.beginPath(); ctx.arc(cx, cy * sgn, cr, a0, a0 + 4.2, sgn < 0); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx - cr * 2.4, cy * sgn * 0.92, cr * 0.7, -a0, -a0 + 4.2, sgn > 0); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------------------
+   Explosion.  state = fxExplosionCreate()  (or any {} — pools are made on first Start)
+   fxExplosionStart(state, x, y)      arm the sequence at x,y. Optional before Start:
+                                      state.groundY (px, debris bounces), state.scale (default 1)
+   fxExplosionDraw(ctx, state, dt)    advance by dt seconds and draw. Call every frame.
+   Timeline: frame 0 full-canvas white flash (fades in 0.15 s) -> fireball + sparks ->
+             debris with gravity + expanding shock ring -> smoke -> state.done = true at ~4.5 s
+             (a scorch mark keeps drawing after done; set state.active=false to clear it).
+--------------------------------------------------------------------------- */
+function fxExplosionCreate() {
+  const N = 64, S = 96, K = 40;
+  return {
+    active: false, done: false, t: 0, frame: 0, x: 0, y: 0, scale: 1, groundY: 1e9,
+    dN: N, dx: new Float32Array(N), dy: new Float32Array(N), dvx: new Float32Array(N), dvy: new Float32Array(N),
+    drot: new Float32Array(N), dvr: new Float32Array(N), dsz: new Float32Array(N),
+    sN: S, sx: new Float32Array(S), sy: new Float32Array(S), svx: new Float32Array(S), svy: new Float32Array(S), slife: new Float32Array(S),
+    kN: K, kx: new Float32Array(K), ky: new Float32Array(K), kvx: new Float32Array(K), kvy: new Float32Array(K),
+    ksz: new Float32Array(K), klife: new Float32Array(K), kborn: new Float32Array(K)
+  };
+}
+function fxExplosionStart(state, x, y) {
+  if (!state.dx) {
+    const gy = state.groundY, sc = state.scale;
+    Object.assign(state, fxExplosionCreate());
+    if (gy !== undefined) state.groundY = gy;
+    if (sc !== undefined) state.scale = sc;
+  }
+  const k = state.scale || 1;
+  state.active = true; state.done = false; state.t = 0; state.frame = 0; state.x = x; state.y = y;
+  for (let i = 0; i < state.dN; i++) {
+    const an = Math.random() * Math.PI * 2, sp = (180 + Math.random() * 620) * k;
+    state.dx[i] = x; state.dy[i] = y;
+    state.dvx[i] = Math.cos(an) * sp; state.dvy[i] = Math.sin(an) * sp - 220 * k;
+    state.drot[i] = Math.random() * 6.28; state.dvr[i] = (Math.random() - 0.5) * 24;
+    state.dsz[i] = (2 + Math.random() * Math.random() * 11) * k;
+  }
+  for (let i = 0; i < state.sN; i++) {
+    const an = Math.random() * Math.PI * 2, sp = (300 + Math.random() * 900) * k;
+    state.sx[i] = x; state.sy[i] = y;
+    state.svx[i] = Math.cos(an) * sp; state.svy[i] = Math.sin(an) * sp;
+    state.slife[i] = 0.35 + Math.random() * 0.9;
+  }
+  for (let i = 0; i < state.kN; i++) {
+    const an = Math.random() * Math.PI * 2, sp = (20 + Math.random() * 170) * k;
+    state.kx[i] = x + Math.cos(an) * 34 * k; state.ky[i] = y + Math.sin(an) * 26 * k;
+    state.kvx[i] = Math.cos(an) * sp; state.kvy[i] = Math.sin(an) * sp * 0.6 - (25 + Math.random() * 55) * k;
+    state.ksz[i] = (14 + Math.random() * 26) * k;
+    state.klife[i] = 2.4 + Math.random() * 2.0; state.kborn[i] = Math.random() * 0.7;
+  }
+}
+function fxExplosionDraw(ctx, state, dt) {
+  if (!state.active) return;
+  const k = state.scale || 1, x = state.x, y = state.y;
+  const first = state.frame === 0;
+  state.t += dt; state.frame++;
+  const t = state.t;
+  ctx.save();
+
+  // scorch mark (persists)
+  ctx.globalAlpha = 0.55 * _fxClamp(t * 3, 0, 1);
+  ctx.fillStyle = '#020306';
+  ctx.beginPath(); ctx.ellipse(x, y, 70 * k, 38 * k, 0, 0, 6.2832); ctx.fill();
+  if (t > 4.5) { state.done = true; ctx.restore(); return; }
+
+  // smoke
+  ctx.fillStyle = FX_PAL.smoke;
+  for (let i = 0; i < state.kN; i++) {
+    const age = t - state.kborn[i];
+    if (age < 0 || age > state.klife[i]) continue;
+    const dr = Math.exp(-1.6 * dt);
+    state.kvx[i] *= dr; state.kvy[i] = state.kvy[i] * dr - 14 * k * dt;
+    state.kx[i] += state.kvx[i] * dt; state.ky[i] += state.kvy[i] * dt;
+    ctx.globalAlpha = 0.11 * (1 - age / state.klife[i]) * _fxClamp(age * 4, 0, 1);
+    ctx.beginPath(); ctx.arc(state.kx[i], state.ky[i], state.ksz[i] * (1 + age * 1.1), 0, 6.2832); ctx.fill();
+  }
+
+  // fireball
+  ctx.globalCompositeOperation = 'lighter';
+  if (t < 1.0) {
+    const fr = (30 + 190 * (1 - Math.exp(-t * 9))) * k;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, fr);
+    g.addColorStop(0, 'rgba(255,250,230,1)'); g.addColorStop(0.35, 'rgba(255,179,71,0.85)');
+    g.addColorStop(0.7, 'rgba(255,122,26,0.4)'); g.addColorStop(1, 'rgba(255,60,10,0)');
+    ctx.globalAlpha = _fxClamp(1 - t / 1.0, 0, 1);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x, y, fr, 0, 6.2832); ctx.fill();
+  }
+  // sparks (streaks)
+  ctx.strokeStyle = FX_PAL.amber; ctx.lineWidth = 1.6 * k; ctx.lineCap = 'round';
+  for (let i = 0; i < state.sN; i++) {
+    if (t > state.slife[i]) continue;
+    const dr = Math.exp(-2.2 * dt);
+    state.svx[i] *= dr; state.svy[i] = state.svy[i] * dr + 500 * k * dt;
+    state.sx[i] += state.svx[i] * dt; state.sy[i] += state.svy[i] * dt;
+    ctx.globalAlpha = 1 - t / state.slife[i];
+    ctx.beginPath(); ctx.moveTo(state.sx[i], state.sy[i]);
+    ctx.lineTo(state.sx[i] - state.svx[i] * 0.03, state.sy[i] - state.svy[i] * 0.03); ctx.stroke();
+  }
+
+  // debris (gravity, bounce on groundY)
+  ctx.globalCompositeOperation = 'source-over';
+  const heat = _fxClamp(1 - t / 1.2, 0, 1);
+  for (let i = 0; i < state.dN; i++) {
+    state.dvy[i] += 900 * k * dt;
+    state.dvx[i] *= Math.exp(-0.5 * dt);
+    state.dx[i] += state.dvx[i] * dt; state.dy[i] += state.dvy[i] * dt;
+    if (state.dy[i] > state.groundY) {
+      state.dy[i] = state.groundY; state.dvy[i] *= -0.32; state.dvx[i] *= 0.6; state.dvr[i] *= 0.5;
+      if (Math.abs(state.dvy[i]) < 30 * k) { state.dvy[i] = 0; state.dvr[i] = 0; state.dvx[i] *= 0.8; }
+    }
+    state.drot[i] += state.dvr[i] * dt;
+    const sz = state.dsz[i];
+    ctx.save();
+    ctx.translate(state.dx[i], state.dy[i]); ctx.rotate(state.drot[i]);
+    ctx.globalAlpha = _fxClamp(4.5 - t, 0, 1);
+    ctx.fillStyle = FX_PAL.metal; ctx.fillRect(-sz, -sz * 0.4, sz * 2, sz * 0.8);
+    if (heat > 0) { ctx.globalAlpha = heat; ctx.fillStyle = (i & 1) ? FX_PAL.amber : FX_PAL.flame; ctx.fillRect(-sz, -sz * 0.4, sz * 2, sz * 0.8); }
+    ctx.restore();
+  }
+
+  // shock ring
+  if (t < 0.9) {
+    const rr = 760 * k * Math.pow(t, 0.72);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.8 * (1 - t / 0.9);
+    ctx.strokeStyle = FX_PAL.white; ctx.lineWidth = (10 * (1 - t / 0.9) + 1) * k;
+    ctx.beginPath(); ctx.arc(x, y, rr, 0, 6.2832); ctx.stroke();
+  }
+  // white flash: one full frame, then a very fast fade
+  if (first || t < 0.15) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = first ? 1 : 0.8 * (1 - t / 0.15);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  }
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------------------
+   Misfire (NO_LIGHT).  state = fxMisfireCreate() (or {}).
+   fxMisfireStart(state, x, y) / fxMisfireDraw(ctx, state, dt)
+   0–0.4 s igniter spark crackle -> 0.25–2.3 s one small grey puff drifting up -> nothing.
+   state.done = true at 2.5 s. The silence is the effect.
+--------------------------------------------------------------------------- */
+function fxMisfireCreate() {
+  const S = 14, K = 8;
+  return {
+    active: false, done: false, t: 0, x: 0, y: 0, scale: 1,
+    sN: S, sx: new Float32Array(S), sy: new Float32Array(S), svx: new Float32Array(S), svy: new Float32Array(S), slife: new Float32Array(S),
+    kN: K, kx: new Float32Array(K), ky: new Float32Array(K), kvx: new Float32Array(K), kvy: new Float32Array(K), ksz: new Float32Array(K)
+  };
+}
+function fxMisfireStart(state, x, y) {
+  if (!state.sx) { const sc = state.scale; Object.assign(state, fxMisfireCreate()); if (sc !== undefined) state.scale = sc; }
+  const k = state.scale || 1;
+  state.active = true; state.done = false; state.t = 0; state.x = x; state.y = y;
+  for (let i = 0; i < state.sN; i++) {
+    const an = Math.random() * 6.2832, sp = (40 + Math.random() * 160) * k;
+    state.sx[i] = x; state.sy[i] = y; state.svx[i] = Math.cos(an) * sp; state.svy[i] = Math.sin(an) * sp;
+    state.slife[i] = 0.12 + Math.random() * 0.3;
+  }
+  for (let i = 0; i < state.kN; i++) {
+    state.kx[i] = x + (Math.random() - 0.5) * 8 * k; state.ky[i] = y + (Math.random() - 0.5) * 8 * k;
+    state.kvx[i] = (10 + Math.random() * 26) * k; state.kvy[i] = -(6 + Math.random() * 16) * k;
+    state.ksz[i] = (5 + Math.random() * 7) * k;
+  }
+}
+function fxMisfireDraw(ctx, state, dt) {
+  if (!state.active) return;
+  state.t += dt;
+  const t = state.t, k = state.scale || 1, x = state.x, y = state.y;
+  if (t > 2.5) { state.done = true; state.active = false; return; }
+  ctx.save();
+  if (t > 0.25) {
+    const age = t - 0.25;
+    ctx.fillStyle = FX_PAL.smoke;
+    for (let i = 0; i < state.kN; i++) {
+      const dr = Math.exp(-1.2 * dt);
+      state.kvx[i] *= dr; state.kvy[i] *= dr;
+      state.kx[i] += state.kvx[i] * dt; state.ky[i] += state.kvy[i] * dt;
+      ctx.globalAlpha = 0.22 * _fxClamp(age * 5, 0, 1) * _fxClamp(1 - age / 2.05, 0, 1);
+      ctx.beginPath(); ctx.arc(state.kx[i], state.ky[i], state.ksz[i] * (1 + age * 0.9), 0, 6.2832); ctx.fill();
+    }
+  }
+  if (t < 0.45) {
+    ctx.globalCompositeOperation = 'lighter';
+    const fl = 0.5 + 0.5 * Math.sin(t * 190) * Math.sin(t * 67);
+    ctx.globalAlpha = _fxClamp(1 - t / 0.45, 0, 1) * (0.4 + 0.6 * fl);
+    ctx.shadowColor = FX_PAL.cyan; ctx.shadowBlur = 12;
+    ctx.strokeStyle = FX_PAL.white; ctx.lineWidth = 1.4 * k; ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (let j = 0; j < 4; j++) {               // crackling star
+      const an = j * 0.785 + t * 40, len = (8 + 9 * fl) * k;
+      ctx.moveTo(x - Math.cos(an) * len, y - Math.sin(an) * len); ctx.lineTo(x + Math.cos(an) * len, y + Math.sin(an) * len);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0; ctx.strokeStyle = FX_PAL.amber; ctx.lineWidth = 1.1 * k;
+    for (let i = 0; i < state.sN; i++) {
+      if (t > state.slife[i]) continue;
+      state.svy[i] += 380 * k * dt;
+      state.sx[i] += state.svx[i] * dt; state.sy[i] += state.svy[i] * dt;
+      ctx.globalAlpha = 1 - t / state.slife[i];
+      ctx.beginPath(); ctx.moveTo(state.sx[i], state.sy[i]);
+      ctx.lineTo(state.sx[i] - state.svx[i] * 0.04, state.sy[i] - state.svy[i] * 0.04); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------------------
+   drawPipeFlow(ctx, points, {flow01, fluid, t, width?, phase?})
+   points   polyline, [[x,y],…] or [{x,y},…] (caller pre-allocates; not modified)
+   flow01   0..1 -> dash speed and brightness (0 = dim static pipe; negative = reverse flow)
+   fluid    'gox'|'n2'|'lox'|'kerosene'|'hot'|'vent' -> fixed colour (FX_PAL.fluid)
+   t        seconds. For glitch-free speed changes pass phase (px, caller integrates
+            phase += flow01*140*dt) and it is used instead of t*flow01.
+--------------------------------------------------------------------------- */
+function _fxPolyline(ctx, pts) {
+  ctx.beginPath();
+  for (let i = 0; i < pts.length; i++) {
+    const q = pts[i], px = q.x !== undefined ? q.x : q[0], py = q.y !== undefined ? q.y : q[1];
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+}
+function drawPipeFlow(ctx, points, o) {
+  if (!points || points.length < 2) return;
+  const f = _fxClamp(o.flow01 || 0, -1, 1), af = Math.abs(f), w = o.width || 7;
+  const col = FX_PAL.fluid[o.fluid] || FX_PAL.muted;
+  ctx.save();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'butt';
+  ctx.setLineDash(FX_PAL.nodash);
+  _fxPolyline(ctx, points);
+  ctx.strokeStyle = FX_PAL.line; ctx.lineWidth = w; ctx.stroke();            // pipe wall
+  ctx.strokeStyle = FX_PAL.panel2; ctx.lineWidth = w - 2.5; ctx.stroke();    // bore
+  ctx.strokeStyle = col; ctx.globalAlpha = 0.16 + 0.22 * af; ctx.lineWidth = w - 2.5; ctx.stroke(); // fluid tint
+  if (af > 0.004) {
+    ctx.setLineDash(FX_PAL.dash);
+    ctx.lineDashOffset = -(o.phase !== undefined ? o.phase : (o.t || 0) * f * 140);
+    ctx.globalAlpha = 0.45 + 0.55 * af;
+    ctx.lineWidth = Math.max(1.5, w - 4.5);
+    if (o.fluid === 'hot') { ctx.shadowColor = col; ctx.shadowBlur = 8; }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------------------
+   drawValve(ctx, x, y, {kind, open01, failSafe, hot, angle?, size?, label?})
+   kind     'manual' (bow-tie + lever that swings 90°: across pipe = closed, along pipe = open)
+            'pneumatic' (bow-tie + stem + actuator dome with spring, NO/NC letter, travel pip)
+            'check' (arrow + seat bar; flow direction = +x of angle)
+            'relief' (angle valve + spring; vents upward when open01>0)
+            'burstDisc' (domed disc between flanges; open01>=0.5 = ruptured petals)
+   open01   0 closed … 1 open (caller tweens).  failSafe 'NO'|'NC' (pneumatic only).
+   hot      true -> red/flame glow (over-temperature or over-pressure).
+   angle    pipe direction in rad (default 0).  size half-length px (default 14).  label below.
+   glow     0..1 extra flash energy on actuation; caller decays it: glow *= Math.exp(-dt * 6).
+--------------------------------------------------------------------------- */
+function drawValve(ctx, x, y, o) {
+  const s = o.size || 14, op = _fxClamp(o.open01 || 0, 0, 1), kind = o.kind || 'manual';
+  const live = o.hot ? FX_PAL.red : FX_PAL.green;
+  ctx.save();
+  ctx.translate(x, y);
+  if (o.label) {
+    ctx.font = '10px ' + FX_PAL.mono; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillStyle = FX_PAL.muted; ctx.fillText(o.label, 0, s + 6);
+  }
+  if (o.angle) ctx.rotate(o.angle);
+  ctx.lineWidth = 1.6; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.strokeStyle = o.hot ? FX_PAL.red : FX_PAL.text;
+  const gl = _fxClamp(o.glow || 0, 0, 1);
+  if (o.hot || gl > 0) { ctx.shadowColor = o.hot ? FX_PAL.flame : FX_PAL.amber; ctx.shadowBlur = (o.hot ? 12 : 0) + 30 * gl; }
+
+  if (kind === 'burstDisc') {
+    ctx.beginPath(); ctx.moveTo(-s * 0.35, -s); ctx.lineTo(-s * 0.35, s); ctx.moveTo(s * 0.35, -s); ctx.lineTo(s * 0.35, s); ctx.stroke();
+    if (op < 0.5) {
+      ctx.beginPath(); ctx.moveTo(-s * 0.35, -s * 0.8); ctx.quadraticCurveTo(s * 0.55, 0, -s * 0.35, s * 0.8);
+      ctx.strokeStyle = o.hot ? FX_PAL.red : FX_PAL.amber; ctx.stroke();
+    } else {
+      ctx.strokeStyle = FX_PAL.red;
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.35, -s * 0.8); ctx.quadraticCurveTo(s * 0.5, -s * 0.75, s * 1.0, -s * 0.95);
+      ctx.moveTo(-s * 0.35, s * 0.8); ctx.quadraticCurveTo(s * 0.5, s * 0.75, s * 1.0, s * 0.95);
+      ctx.moveTo(s * 0.1, -s * 0.2); ctx.lineTo(s * 0.7, -s * 0.35);
+      ctx.moveTo(s * 0.1, s * 0.2); ctx.lineTo(s * 0.7, s * 0.35);
+      ctx.stroke();
+    }
+    ctx.restore(); return;
+  }
+  if (kind === 'check') {
+    ctx.beginPath(); ctx.moveTo(-s, -s * 0.62); ctx.lineTo(s * 0.55, 0); ctx.lineTo(-s, s * 0.62); ctx.closePath();
+    ctx.fillStyle = FX_PAL.panel; ctx.fill();
+    ctx.globalAlpha = 0.15 + 0.75 * op; ctx.fillStyle = live; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(s * 0.55 + op * s * 0.3, -s * 0.7); ctx.lineTo(s * 0.55 + op * s * 0.3, s * 0.7);
+    ctx.lineWidth = 2.4; ctx.stroke();
+    ctx.restore(); return;
+  }
+  // bow-tie body (manual / pneumatic); relief = angle body
+  ctx.beginPath();
+  if (kind === 'relief') {
+    ctx.moveTo(-s, -s * 0.6); ctx.lineTo(0, 0); ctx.lineTo(-s, s * 0.6); ctx.closePath();
+    ctx.moveTo(-s * 0.6, -s); ctx.lineTo(0, 0); ctx.lineTo(s * 0.6, -s); ctx.closePath();
+  } else {
+    ctx.moveTo(-s, -s * 0.6); ctx.lineTo(0, 0); ctx.lineTo(-s, s * 0.6); ctx.closePath();
+    ctx.moveTo(s, -s * 0.6); ctx.lineTo(0, 0); ctx.lineTo(s, s * 0.6); ctx.closePath();
+  }
+  ctx.fillStyle = FX_PAL.panel; ctx.fill();
+  ctx.globalAlpha = 0.12 + 0.78 * op; ctx.fillStyle = live; ctx.fill(); ctx.globalAlpha = 1;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  if (kind === 'manual') {
+    ctx.save();
+    ctx.rotate(-Math.PI / 2 * (1 - op));          // across the pipe = closed, along = open
+    ctx.strokeStyle = op > 0.5 ? live : FX_PAL.amber; ctx.lineWidth = 3.2;
+    ctx.beginPath(); ctx.moveTo(-s * 0.15, 0); ctx.lineTo(s * 1.25, 0); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = FX_PAL.text; ctx.beginPath(); ctx.arc(0, 0, 2.4, 0, 6.2832); ctx.fill();
+  } else if (kind === 'pneumatic') {
+    const top = -s * 1.35;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, top); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, top, s * 0.78, Math.PI, 0); ctx.closePath();
+    ctx.fillStyle = FX_PAL.panel; ctx.fill(); ctx.stroke();
+    // travel pip on the stem
+    ctx.fillStyle = op > 0.5 ? live : FX_PAL.amber;
+    ctx.fillRect(-3, -s * 0.35 - op * s * 0.7 - 1.5, 6, 3);
+    if (!o.angle) {
+      ctx.font = 'bold ' + Math.round(s * 0.55) + 'px ' + FX_PAL.mono; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = o.failSafe === 'NO' ? FX_PAL.cyan : FX_PAL.amber;
+      ctx.fillText(o.failSafe === 'NO' ? 'NO' : 'NC', 0, top - s * 0.34);
+    } else {
+      ctx.fillStyle = o.failSafe === 'NO' ? FX_PAL.cyan : FX_PAL.amber;
+      ctx.beginPath(); ctx.arc(0, top - s * 0.36, 2.6, 0, 6.2832); ctx.fill();
+    }
+  } else if (kind === 'relief') {
+    // spring zig-zag above the outlet, compresses as it lifts
+    const h = s * 1.5 * (1 - 0.3 * op), y0 = -s;
+    ctx.beginPath(); ctx.moveTo(0, y0);
+    for (let i = 1; i <= 6; i++) ctx.lineTo((i & 1 ? 1 : -1) * s * 0.38, y0 - h * i / 6.5);
+    ctx.lineTo(0, y0 - h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-s * 0.5, y0 - h); ctx.lineTo(s * 0.5, y0 - h); ctx.stroke();
+    if (op > 0.02) {
+      ctx.strokeStyle = FX_PAL.muted; ctx.globalAlpha = op; ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      for (let i = -1; i <= 1; i++) { ctx.moveTo(s * (0.9 + 0.1 * i), -s * 0.9 + i * 3); ctx.lineTo(s * 1.9, -s * (1.3 - i * 0.35)); }
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------------------
+   drawGauge(ctx, x, y, r, {value, max, redline, label, unit})
+   270° dial, red arc from redline to max, needle turns red past redline.
+   Needle inertia is the CALLER's job: pass a smoothed value, e.g.
+     shown += (actual - shown) * (1 - Math.exp(-dt * 9));
+   Non-finite values draw "–" and park the needle at zero.
+--------------------------------------------------------------------------- */
+function drawGauge(ctx, x, y, r, o) {
+  const max = o.max > 0 ? o.max : 1, ok = isFinite(o.value);
+  const v = ok ? o.value : 0, f = _fxClamp(v / max, 0, 1.04);
+  const A0 = Math.PI * 0.75, SW = Math.PI * 1.5;
+  const red = isFinite(o.redline) ? _fxClamp(o.redline / max, 0, 1) : 1;
+  const over = ok && isFinite(o.redline) && v >= o.redline;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.2832);
+  ctx.fillStyle = FX_PAL.panel2; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = over ? FX_PAL.red : FX_PAL.line;
+  if (over) { ctx.shadowColor = FX_PAL.red; ctx.shadowBlur = 14; }
+  ctx.stroke(); ctx.shadowBlur = 0;
+  // scale arcs
+  ctx.lineWidth = Math.max(2, r * 0.07); ctx.lineCap = 'butt';
+  ctx.strokeStyle = FX_PAL.line;
+  ctx.beginPath(); ctx.arc(0, 0, r * 0.82, A0, A0 + SW * red); ctx.stroke();
+  if (red < 1) { ctx.strokeStyle = FX_PAL.red; ctx.beginPath(); ctx.arc(0, 0, r * 0.82, A0 + SW * red, A0 + SW); ctx.stroke(); }
+  ctx.strokeStyle = over ? FX_PAL.red : FX_PAL.green; ctx.globalAlpha = 0.85;
+  ctx.beginPath(); ctx.arc(0, 0, r * 0.82, A0, A0 + SW * Math.min(f, 1)); ctx.stroke();
+  ctx.globalAlpha = 1;
+  // ticks
+  ctx.lineWidth = 1.2;
+  for (let i = 0; i <= 20; i++) {
+    const a = A0 + SW * i / 20, major = i % 2 === 0;
+    const r1 = r * (major ? 0.62 : 0.68), r2 = r * 0.75;
+    ctx.strokeStyle = i / 20 >= red ? FX_PAL.red : (major ? FX_PAL.text : FX_PAL.muted);
+    ctx.beginPath(); ctx.moveTo(Math.cos(a) * r1, Math.sin(a) * r1); ctx.lineTo(Math.cos(a) * r2, Math.sin(a) * r2); ctx.stroke();
+  }
+  // text
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = FX_PAL.muted; ctx.font = Math.max(8, Math.round(r * 0.19)) + 'px ' + FX_PAL.mono;
+  if (o.label) ctx.fillText(o.label, 0, r * 0.16);
+  if (o.unit) ctx.fillText(o.unit, 0, r * 0.74);
+  ctx.fillStyle = over ? FX_PAL.red : FX_PAL.text; ctx.font = 'bold ' + Math.max(10, Math.round(r * 0.3)) + 'px ' + FX_PAL.mono;
+  ctx.fillText(ok ? (Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(1)) : "–", 0, r * 0.5);
+  // needle
+  const an = A0 + SW * f;
+  ctx.strokeStyle = over ? FX_PAL.red : FX_PAL.amber; ctx.lineWidth = Math.max(1.6, r * 0.045); ctx.lineCap = 'round';
+  ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 6;
+  ctx.beginPath(); ctx.moveTo(-Math.cos(an) * r * 0.12, -Math.sin(an) * r * 0.12); ctx.lineTo(Math.cos(an) * r * 0.7, Math.sin(an) * r * 0.7); ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = FX_PAL.metal; ctx.beginPath(); ctx.arc(0, 0, r * 0.09, 0, 6.2832); ctx.fill();
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------------------
+   drawHeatHaze(ctx, {x, y, w, h, intensity01, t})
+   Shimmer over the rectangle x,y,w,h (top-left + size): rising wavy low-alpha strips,
+   additive, warm near the bottom edge. Pure strokes — no getImageData, no allocations.
+   Put it above/around the plume; intensity01 ~ thrust01.
+--------------------------------------------------------------------------- */
+function drawHeatHaze(ctx, o) {
+  const k = _fxClamp(o.intensity01 || 0, 0, 1);
+  if (k < 0.01 || !(o.w > 0) || !(o.h > 0)) return;
+  const t = o.t || 0, N = 8, SEG = 22;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'butt';
+  for (let i = 0; i < N; i++) {
+    const ph = (t * (0.2 + 0.05 * (i % 3)) + i / N) % 1;          // 0 bottom -> 1 top, loops
+    const yy = o.y + o.h * (1 - ph);
+    const amp = (2 + 5 * ph) * (0.5 + k);
+    const a0 = 0.06 * k * Math.sin(Math.PI * ph);
+    ctx.strokeStyle = ph < 0.35 ? FX_PAL.amber : FX_PAL.muted;
+    ctx.lineWidth = 3 + 6 * ph;
+    let qx = o.x, qy = yy + amp * Math.sin(qx * 0.021 + t * 7 + i * 1.7);
+    for (let j = 1; j <= SEG; j++) {                              // per-segment alpha fades the strip ends
+      const px = o.x + o.w * j / SEG;
+      const py = yy + amp * Math.sin(px * 0.021 + t * 7 + i * 1.7) + amp * 0.5 * Math.sin(px * 0.047 - t * 11 + i);
+      ctx.globalAlpha = a0 * Math.sin(Math.PI * (j - 0.5) / SEG);
+      ctx.beginPath(); ctx.moveTo(qx, qy); ctx.lineTo(px, py); ctx.stroke();
+      qx = px; qy = py;
+    }
+  }
+  ctx.restore();
+}
+
+/* ---------------------------------------------------------------------------
+   fxShake(thrust01, t, out?) -> {dx, dy}
+   Screen-shake offset in px, amplitude ∝ thrust01 (max ≈ 3 px), deterministic summed sines
+   (no Math.random). Writes into `out` if given, else into one reused module-level object.
+   Usage: const s = fxShake(thrust01, t); ctx.translate(s.dx, s.dy);
+--------------------------------------------------------------------------- */
+const _FX_SHAKE = { dx: 0, dy: 0 };
+function fxShake(thrust01, t, out) {
+  const o = out || _FX_SHAKE, a = 3 * _fxClamp(thrust01 || 0, 0, 1);
+  o.dx = a * (0.5 * Math.sin(t * 71.3) + 0.3 * Math.sin(t * 113.7 + 1.3) + 0.2 * Math.sin(t * 37.1 + 4.1));
+  o.dy = a * (0.5 * Math.sin(t * 83.9 + 2.2) + 0.3 * Math.sin(t * 127.1 + 0.4) + 0.2 * Math.sin(t * 43.3 + 5.0));
+  return o;
+}
+/* ==== END FX ART PACK ==== */
+
+/* audio.js — graftable Web Audio kit for the test-stand simulator.
+   Works as <script src="audio.js"> or pasted into an inline <script>.
+   Public API: audioInit(), audioSet({pc01,mdot01,chug01}), audioOneShot(name),
+               audioMute(bool), audioIsReady(), audioPath().
+   All private state lives in _AK. Nothing here throws if Web Audio is missing. */
+
+var _AK = {
+  ctx: null, ready: false, initPromise: null, path: 'none', muted: true,
+  master: null, roarGain: null, shotBus: null, limiter: null,
+  noiseBuf: null, node: null, synth: null,
+  pPc: null, pMdot: null, pChug: null,
+  pc: 0, mdot: 0, chug: 0,
+  LEVEL: 0.85,
+  forceFallback: false,   // set true before audioInit() to skip the worklet (testing)
+
+  /* DSP core as source text: shared by the AudioWorklet (via Blob URL) and the
+     ScriptProcessor fallback (via new Function). */
+  SYNTH_SRC: [
+    'class AKRoarSynth {',
+    '  constructor(sr){',
+    '    this.sr = sr; this.tPc = 0; this.tMdot = 0; this.tChug = 0;',
+    '    this.pc = 0; this.mdot = 0; this.chug = 0;',
+    '    this.k = 1 - Math.exp(-1 / (0.04 * sr));',   // 40 ms parameter smoothing
+    '    this.seed = 22222; this.lp1 = 0; this.lp2 = 0; this.hp = 0;',
+    '    this.rLow = 0; this.rBand = 0; this.cEnv = 0; this.cLp = 0; this.ph = 0; this.drift = 0;',
+    '  }',
+    '  process(L, R){',
+    '    const n = L.length, sr = this.sr, k = this.k;',
+    '    let pc = this.pc, mdot = this.mdot, chug = this.chug, seed = this.seed;',
+    '    let lp1 = this.lp1, lp2 = this.lp2, hp = this.hp, rLow = this.rLow, rBand = this.rBand;',
+    '    let cEnv = this.cEnv, cLp = this.cLp, ph = this.ph, drift = this.drift;',
+    '    const tPc = this.tPc, tMdot = this.tMdot, tChug = this.tChug;',
+    '    if (tPc + tMdot + tChug < 1e-5 && pc + mdot < 1e-4 && cEnv < 1e-4) {',
+    '      for (let i = 0; i < n; i++) { L[i] = 0; if (R !== L) R[i] = 0; }',
+    '      this.pc = 0; this.mdot = 0; this.chug = 0; this.cEnv = 0; return;',
+    '    }',
+    '    const twoPi = 6.283185307179586;',
+    '    for (let i = 0; i < n; i++) {',
+    '      pc += (tPc - pc) * k; mdot += (tMdot - mdot) * k; chug += (tChug - chug) * k;',
+    '      seed = (seed * 1664525 + 1013904223) >>> 0; const w = seed / 2147483648 - 1;',
+    '      seed = (seed * 1664525 + 1013904223) >>> 0; const w2 = seed / 4294967296;',
+    // roar: two cascaded one-pole lowpasses, cutoff 250 Hz .. ~5 kHz with pc
+    '      const fc = 250 + 4800 * pc * pc;',
+    '      let a = twoPi * fc / sr; if (a > 0.9) a = 0.9;',
+    '      lp1 += (w - lp1) * a; lp2 += (lp1 - lp2) * a;',
+    '      hp += (lp2 - hp) * 0.004;',                   // remove DC / sub-sonic
+    '      const roar = (lp2 - hp) * (1.2 / Math.sqrt(a + 0.003)) * 0.22;',
+    // rumble: resonant state-variable bandpass on noise, 40..90 Hz
+    '      drift += (w2 - 0.5 - drift) * 0.0002;',
+    '      const fr = 40 + 50 * pc + 60 * drift;',
+    '      const f = 2 * Math.sin(3.141592653589793 * fr / sr);',
+    '      rLow += f * rBand; const rHigh = w - rLow - 0.12 * rBand; rBand += f * rHigh;',
+    '      if (rBand > 40) rBand = 40; else if (rBand < -40) rBand = -40;',
+    '      const rumble = rBand * 0.035;',
+    // crackle: random impulses, density follows mdot (up to ~70 /s)
+    '      if (w2 < mdot * 70 / sr) cEnv += 0.4 + 0.6 * ((seed >>> 8 & 255) / 255);',
+    '      cEnv *= 0.9965; if (cEnv > 1.5) cEnv = 1.5;',
+    '      cLp += (w - cLp) * 0.35;',
+    '      const crackle = (w - cLp) * cEnv * 0.55;',
+    // chug: 8..20 Hz amplitude wobble
+    '      ph += (8 + 12 * chug) / sr; if (ph >= 1) ph -= 1;',
+    '      const am = 1 - chug * 0.85 * (0.5 + 0.5 * Math.sin(twoPi * ph));',
+    '      const lvl = Math.pow(pc, 0.7);',
+    '      const drive = lvl > mdot * 0.5 ? lvl : mdot * 0.5;',
+    '      let y = (roar * lvl + rumble * lvl + crackle * (0.35 + 0.65 * drive)) * am;',
+    '      y = Math.tanh(2.2 * y) * 0.8;',
+    '      L[i] = y; if (R !== L) R[i] = y;',
+    '    }',
+    '    this.pc = pc; this.mdot = mdot; this.chug = chug; this.seed = seed;',
+    '    this.lp1 = lp1; this.lp2 = lp2; this.hp = hp; this.rLow = rLow; this.rBand = rBand;',
+    '    this.cEnv = cEnv; this.cLp = cLp; this.ph = ph; this.drift = drift;',
+    '  }',
+    '}'
+  ].join('\n'),
+
+  WORKLET_SRC: [
+    'class AKRoarProcessor extends AudioWorkletProcessor {',
+    '  static get parameterDescriptors(){ return [',
+    '    {name:"pc",defaultValue:0,minValue:0,maxValue:1,automationRate:"k-rate"},',
+    '    {name:"mdot",defaultValue:0,minValue:0,maxValue:1,automationRate:"k-rate"},',
+    '    {name:"chug",defaultValue:0,minValue:0,maxValue:1,automationRate:"k-rate"}]; }',
+    '  constructor(){ super(); this.s = new AKRoarSynth(sampleRate); }',
+    '  process(inputs, outputs, p){',
+    '    const o = outputs[0]; if (!o || !o[0]) return true;',
+    '    this.s.tPc = p.pc[0]; this.s.tMdot = p.mdot[0]; this.s.tChug = p.chug[0];',
+    '    this.s.process(o[0], o[1] || o[0]); return true;',
+    '  }',
+    '}',
+    'registerProcessor("ak-roar", AKRoarProcessor);'
+  ].join('\n'),
+
+  clamp01: function (v) { v = +v; return v > 0 ? (v < 1 ? v : 1) : 0; },
+
+  build: function (ctx) {
+    var A = _AK;
+    A.limiter = ctx.createDynamicsCompressor();
+    A.limiter.threshold.value = -10; A.limiter.knee.value = 6; A.limiter.ratio.value = 16;
+    A.limiter.attack.value = 0.002; A.limiter.release.value = 0.18;
+    A.master = ctx.createGain(); A.master.gain.value = 0;           // starts MUTED
+    A.roarGain = ctx.createGain(); A.roarGain.gain.value = 1;
+    A.shotBus = ctx.createGain(); A.shotBus.gain.value = 0.9;
+    A.roarGain.connect(A.master); A.shotBus.connect(A.master);
+    A.master.connect(A.limiter); A.limiter.connect(ctx.destination);
+    // shared white-noise buffer, created once
+    var len = Math.floor(ctx.sampleRate * 2), buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    var d = buf.getChannelData(0);
+    for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    A.noiseBuf = buf;
+  },
+
+  startFallback: function (ctx) {
+    var A = _AK;
+    var Synth = new Function(A.SYNTH_SRC + '; return AKRoarSynth;')();
+    A.synth = new Synth(ctx.sampleRate);
+    var sp = ctx.createScriptProcessor(2048, 1, 2);
+    sp.onaudioprocess = function (ev) {
+      var ob = ev.outputBuffer;
+      A.synth.process(ob.getChannelData(0), ob.numberOfChannels > 1 ? ob.getChannelData(1) : ob.getChannelData(0));
+    };
+    sp.connect(A.roarGain);
+    A.node = sp; A.path = 'scriptprocessor';
+  },
+
+  startWorklet: function (ctx) {
+    var A = _AK;
+    if (A.forceFallback || !ctx.audioWorklet || typeof AudioWorkletNode === 'undefined') return Promise.reject(new Error('no worklet'));
+    var src = A.SYNTH_SRC + '\n' + A.WORKLET_SRC;
+    var url = null;
+    var timeout = new Promise(function (_, rej) { setTimeout(function () { rej(new Error('worklet timeout')); }, 3000); });
+    // data: URL first (accepted on file:// pages, where blob: is refused); Blob URL for hosts whose CSP rejects data:.
+    var load = ctx.audioWorklet.addModule('data:application/javascript;charset=utf-8,' + encodeURIComponent(src)).catch(function () {
+      url = URL.createObjectURL(new Blob([src], { type: 'application/javascript' }));
+      return ctx.audioWorklet.addModule(url);
+    });
+    return Promise.race([load, timeout]).then(function () {
+      if (url) { try { URL.revokeObjectURL(url); } catch (e) {} }
+      var node = new AudioWorkletNode(ctx, 'ak-roar', { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2] });
+      A.pPc = node.parameters.get('pc'); A.pMdot = node.parameters.get('mdot'); A.pChug = node.parameters.get('chug');
+      if (!A.pPc || !A.pMdot || !A.pChug) throw new Error('no params');
+      node.connect(A.roarGain);
+      A.node = node; A.path = 'worklet';
+    });
+  },
+
+  push: function () {
+    var A = _AK;
+    if (A.path === 'worklet') { A.pPc.value = A.pc; A.pMdot.value = A.mdot; A.pChug.value = A.chug; }
+    else if (A.synth) { A.synth.tPc = A.pc; A.synth.tMdot = A.mdot; A.synth.tChug = A.chug; }
+  },
+
+  /* one-shot helpers (standard nodes) */
+  env: function (g, t, peak, attack, dur) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  },
+  noise: function (t, dur, type, f0, f1, q, peak, attack) {
+    var A = _AK, c = A.ctx, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = A.noiseBuf; s.loop = true;
+    f.type = type; f.Q.value = q; f.frequency.setValueAtTime(f0, t);
+    if (f1 !== f0) f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    A.env(g, t, peak, attack, dur);
+    s.connect(f); f.connect(g); g.connect(A.shotBus);
+    s.start(t, Math.random() * 1.5); s.stop(t + dur + 0.05);
+  },
+  tone: function (t, dur, type, f0, f1, peak, attack) {
+    var A = _AK, c = A.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(f0, t);
+    if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    A.env(g, t, peak, attack, dur);
+    o.connect(g); g.connect(A.shotBus);
+    o.start(t); o.stop(t + dur + 0.05);
+  },
+
+  shots: {
+    igniter: function (A, t) {
+      A.noise(t, 0.02, 'highpass', 3000, 3000, 0.7, 0.8, 0.001);          // click
+      A.tone(t + 0.015, 0.28, 'sawtooth', 118, 112, 0.22, 0.01);           // spark buzz
+      A.tone(t + 0.015, 0.28, 'square', 236, 228, 0.07, 0.01);
+      A.noise(t + 0.015, 0.28, 'bandpass', 2400, 2000, 3, 0.18, 0.01);
+    },
+    valve: function (A, t) {
+      A.tone(t, 0.14, 'sine', 170, 55, 0.9, 0.003);                        // clunk body
+      A.noise(t, 0.05, 'bandpass', 1400, 600, 1.2, 0.45, 0.001);           // metallic tick
+    },
+    relief: function (A, t) {
+      A.noise(t, 1.0, 'bandpass', 5200, 3200, 0.8, 0.5, 0.03);             // hiss ~1 s
+      A.noise(t, 0.9, 'highpass', 7000, 6000, 0.5, 0.2, 0.02);
+    },
+    explosion: function (A, t) {
+      A.tone(t, 0.5, 'sine', 120, 28, 1.0, 0.004);                         // thump
+      A.noise(t, 0.12, 'lowpass', 6000, 1500, 0.5, 1.0, 0.002);            // blast front
+      A.noise(t, 1.5, 'lowpass', 1800, 120, 0.6, 0.9, 0.01);               // tail ~1.5 s
+      var g = A.roarGain.gain;                                             // duck the roar
+      try { g.cancelScheduledValues(t); } catch (e) {}
+      g.setValueAtTime(g.value, t);
+      g.linearRampToValueAtTime(0.2, t + 0.03);
+      g.setValueAtTime(0.2, t + 0.35);
+      g.linearRampToValueAtTime(1, t + 1.4);
+    },
+    misfire: function (A, t) {
+      A.noise(t, 0.45, 'bandpass', 2600, 500, 1.5, 0.4, 0.004);            // fizzle
+      A.tone(t, 0.3, 'triangle', 140, 50, 0.3, 0.004);
+      A.noise(t + 0.18, 0.08, 'highpass', 4000, 4000, 0.7, 0.2, 0.002);
+    },
+    klaxon: function (A, t) {
+      for (var i = 0; i < 4; i++) {                                        // two-tone, 4 x 0.3 s
+        var f = (i % 2 === 0) ? 620 : 465;
+        A.tone(t + i * 0.3, 0.29, 'square', f, f, 0.22, 0.01);
+        A.tone(t + i * 0.3, 0.29, 'sawtooth', f * 0.5, f * 0.5, 0.14, 0.01);
+      }
+    }
+  }
+};
+
+function audioInit() {
+  var A = _AK;
+  try {
+    if (A.initPromise) {
+      if (A.ctx && A.ctx.state === 'suspended') { try { var r = A.ctx.resume(); if (r && r.catch) r.catch(function () {}); } catch (e) {} }
+      return A.initPromise;
+    }
+    var Ctx = (typeof window !== 'undefined') && (window.AudioContext || window.webkitAudioContext);
+    if (!Ctx) { A.path = 'unavailable'; A.initPromise = Promise.resolve(false); return A.initPromise; }
+    var ctx = new Ctx();
+    A.ctx = ctx;
+    try { var rp = ctx.resume(); if (rp && rp.catch) rp.catch(function () {}); } catch (e) {}
+    A.build(ctx);
+    A.initPromise = A.startWorklet(ctx).catch(function () {
+      A.startFallback(ctx);
+    }).then(function () {
+      A.ready = true; A.push(); return true;
+    }).catch(function () {
+      A.path = 'unavailable'; A.ready = false; return false;
+    });
+    return A.initPromise;
+  } catch (e) {
+    A.path = 'unavailable';
+    A.initPromise = Promise.resolve(false);
+    return A.initPromise;
+  }
+}
+
+function audioSet(s) {
+  var A = _AK;
+  if (!A.ready || !s) return;
+  try {
+    var pc = A.clamp01(s.pc01), md = A.clamp01(s.mdot01), ch = A.clamp01(s.chug01);
+    if (pc === A.pc && md === A.mdot && ch === A.chug) return;
+    A.pc = pc; A.mdot = md; A.chug = ch;
+    A.push();
+  } catch (e) {}
+}
+
+function audioOneShot(name) {
+  var A = _AK;
+  if (!A.ready || !A.ctx) return;
+  try {
+    var fn = A.shots.hasOwnProperty(name) ? A.shots[name] : null;
+    if (fn) fn(A, A.ctx.currentTime + 0.005);
+  } catch (e) {}
+}
+
+function audioMute(m) {
+  var A = _AK;
+  A.muted = !!m;
+  if (!A.ctx || !A.master) return;
+  try {
+    var g = A.master.gain, t = A.ctx.currentTime;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value, t);
+    g.linearRampToValueAtTime(A.muted ? 0 : A.LEVEL, t + 0.02);
+  } catch (e) {}
+}
+
+function audioIsReady() { return !!_AK.ready; }
+function audioPath() { return _AK.path; }
+
+/* ==== CONTENT MODULES (replaceable) ==== */
+const CARDS = {
+  CYL:{name:"Oxygen bottle",what:"Holds the gaseous oxygen at up to 200 bar. Everything downstream lives off this pressure.",without:"No oxidizer, no fire: the igniter burns alone and the engine never lights."},
+  PR1:{name:"Pressure regulator",what:"Drops bottle pressure to a steady 20–60 bar. Because the feed orifice is choked, this setting directly sets the oxygen flow.",without:"Full bottle pressure goes straight into the line and the engine."},
+  RV3:{name:"Relief valve, 70 bar",what:"Sits just after the regulator and lifts at 70 bar to dump gas outside.",without:"If the regulator fails, full bottle pressure runs through the whole line and bursts it."},
+  HV3:{name:"Manual isolation valve",what:"A hand valve a person closes while they are near the stand.",without:"If a remote valve sticks there is no physical barrier left between the bottle and the engine."},
+  FL1:{name:"40 µm filter",what:"Catches particles before they reach the main valve. It sits upstream of the valve on purpose.",without:"Particle impact is the number-one ignition source in high-pressure oxygen systems."},
+  MV1:{name:"Main oxygen valve",what:"Pneumatic, normally closed, opens slowly over 0.4–0.8 s. Loses power, it shuts.",without:"Snap it open and the gas in the dead line is squeezed so fast it gets hot enough to ignite: adiabatic compression."},
+  NV1:{name:"Needle valve",what:"Throttles the actuator exhaust so the main valve opens slowly. This slider is that needle valve.",without:"The main valve slams open and the line can catch fire."},
+  IP1:{name:"Injector orifice plate",what:"Swappable plate that gives the injector a pressure drop of 25–30 % of chamber pressure.",without:"With a wide-open bore the drop is almost zero, the chamber talks back to the feed, and the engine chugs."},
+  PV3:{name:"Nitrogen purge valve",what:"Sweeps the line with nitrogen before firing, pre-charges it, and blows out flame and leftover oxygen after shutdown. Loses power, it opens.",without:"After shutdown the flame creeps back through the injector into an oxygen-filled manifold."},
+  CK2:{name:"Two check valves in series",what:"Let nitrogen in, never let oxygen back out toward the nitrogen bottle.",without:"One leaking check valve back-fills the nitrogen bottle with oxygen: a high-pressure bottle nobody knows the contents of."},
+  PV1:{name:"Vent valve",what:"Dumps line pressure outside. It is held closed by power, so it opens by itself when anything fails.",without:"A power cut would trap a pressurised oxygen line with nobody able to reach it."},
+  RV1:{name:"Line relief valve, 75 bar",what:"Lifts at 75 bar on its own port. No isolation valve is allowed upstream of it.",without:"An over-pressure has only the pipe wall to stop it."},
+  RD1:{name:"Burst disc, 90 bar",what:"A one-shot metal disc on its own separate port, the last line of defence.",without:"Sharing a port with the relief valve makes that port a single point of failure."},
+  PT2:{name:"Bottle-side pressure gauge",what:"Shows how much oxygen is left and whether the regulator is fed.",without:"You find out the bottle is empty when the engine sags mid-burn."},
+  PT3:{name:"Line pressure gauge",what:"Shows the pressure between the main valve and the injector.",without:"You cannot tell a leak from a bad reading before the final GO / NO-GO."},
+  PT4:{name:"Chamber pressure gauge",what:"Chamber pressure is the only trustworthy proof of ignition.",without:"You rely on 'I saw fire', open the oxygen into an unlit chamber and get a hard start."},
+  ARM:{name:"ARM key",what:"The only physical safety in the igniter circuit. The test director inserts it, removes it, and keeps it in a pocket.",without:"Anyone, or any glitch, can fire the igniter while people are at the stand."},
+  IGN:{name:"Igniter",what:"A small pyrotechnic charge. Fire first, oxygen second.",without:"Oxygen first and fire second fills the chamber with mixture that lights all at once: a hard start."},
+  ABORT:{name:"ABORT",what:"Closes the main valve, opens the vent and opens the purge. Anyone may call it at any time.",without:"After T-0 this is the only input a human still has."}
+};
+const INCIDENTS = {
+  NO_LIGHT:{title:"No ignition",happened:"The igniter burned out and the chamber never lit. A silent stand with a possibly live igniter is the most dangerous kind.",number:"O2 into chamber {ox} g/s · O/F {of} (flammable {lo}–{hi}) · misfire clock 30:00",prevent:"Get oxygen flowing while the igniter is burning, with a mixture inside the flammable range. After a misfire nobody approaches for 30 minutes: trust the clock, not your judgement."},
+  HARD_START:{title:"Hard start",happened:"Oxygen filled the chamber before there was a flame. When the igniter fired, the whole charge burned at once at constant volume.",number:"Pc spike {pk} bar vs design {design} bar · O2 lead {lead} s",prevent:"Fire first, oxygen second. Confirm the igniter on chamber pressure, then ramp the main valve."},
+  ADIABATIC:{title:"Line fire — adiabatic compression",happened:"The main valve snapped open into a low-pressure dead line. The trapped gas was squeezed too fast to lose its heat and ignited the line in pure oxygen.",number:"T2 = T1·(P2/P1)^((γ−1)/γ) = {T2} °C for {P1} → {P2} bar · the line lit on the way up, at {lim} °C · valve opened in {ramp} s",prevent:"Pre-charge the line with nitrogen to at least one third of upstream pressure, and open the main valve over 0.3 s or more."},
+  CHUG:{title:"Chugging",happened:"The injector pressure drop was too small, so chamber pressure pushed back on the feed. Flow and pressure chased each other in a low-frequency oscillation.",number:"Injector ΔP = {stiff} % of Pc (minimum 20 %) · Pc swing {amp} %",prevent:"Fit the proper injector orifice plate so the drop stays above 20 % of chamber pressure."},
+  BURST:{title:"Chamber burst",happened:"The throat was too small for the flow. Chamber pressure climbed past what the case could hold and it came apart.",number:"Pc {pc} bar > burst {burst} bar · throat Ø{dt} mm",prevent:"Size the throat for the mass flow (Pc = ṁ·c*/At) before anyone opens a valve, or lower the regulator."},
+  BURN_THROUGH:{title:"Grain burn-through",happened:"The burn ran until the fuel port reached the chamber wall. With no paraffin left to protect it the flame cut through the case.",number:"Port Ø{port} mm reached grain Ø{od} mm after {tb} s of burn",prevent:"Shut down on the timer and on chamber pressure. Burn time is a design number, not a feeling."},
+  FLASHBACK:{title:"Flashback into the injector",happened:"After shutdown the chamber was still hot and the manifold still held oxygen. With nothing flowing, the flame crept back through the injector.",number:"{wait} s without purge · manifold O2 {xo} % · chamber {hot} °C",prevent:"Open the nitrogen purge within half a second of closing the main valve, at a pressure above chamber pressure."},
+  REG_FAIL:{title:"Regulator failed — relief valve lifted",happened:"The regulator failed open and bottle pressure went downstream. The 70 bar relief valve lifted and dumped it outside, which is exactly its job.",number:"Line {pu} bar · RV3 set {set} bar · bottle {pb} bar",prevent:"Keep a relief valve directly downstream of every regulator, sized to pass the regulator's full failed-open flow."},
+  POWER_CUT:{title:"Power cut — fail-safe held",happened:"Power was lost. The main valve sprang shut, the vent and the purge sprang open, and the stand made itself safe with nobody touching it.",number:"Safe {ts} s after the cut · line went from {pf0} bar to {xo} % oxygen with no operator input",prevent:"Nothing to prevent: choose every valve's unpowered position so that losing power, air or signal ends in a safe stand."},
+  CLEAN_RUN:{title:"Clean run",happened:"Purged, lit on a confirmed chamber pressure, burned, shut down, purged, vented and the key is back in a pocket.",number:"Peak Pc {pk} bar · thrust {F} N · impulse {I} N·s · Isp {isp} s · burn {tb} s · O/F {of0} → {of1} · GRADE {grade}",prevent:"{notes}"}
+};
+function mkProfile(cR,cL,convL,tR,divL,eR,bell){
+  const p=[];let i,s;
+  for(i=0;i<=4;i++)p.push([cL*i/4,cR]);
+  for(i=1;i<=8;i++){s=i/8;p.push([cL+convL*s,tR+(cR-tR)*(0.5+0.5*Math.cos(Math.PI*s))]);}
+  for(i=1;i<=12;i++){s=i/12;const f=s*(1-bell)+(2*s-s*s)*bell;p.push([cL+convL+divL*s,tR+(eR-tR)*f]);}
+  return p;
+}
+const ENGINES = {
+  ast91:{label:"AST91 hybrid 350 N",type:"hybrid",profile:mkProfile(40,140,31.75,8.255,15.15,13.33,0),throatR:8.255,exitR:13.33,chamberR:40,chamberL:140,
+    grain:{outerR:38,portR:12.5,length:120,x0:10},designPc_bar:11,burstPc_bar:40,note:"Our team's real paraffin / gaseous-oxygen hybrid, drawn from its real profile. Area ratio 2.61."},
+  conical:{label:"Conical 15°",type:"hybrid",profile:mkProfile(40,140,31.75,8.255,30.8,16.51,0),throatR:8.255,exitR:16.51,chamberR:40,chamberL:140,
+    grain:{outerR:38,portR:12.5,length:120,x0:10},designPc_bar:11,burstPc_bar:40,note:"Classic 15° cone, area ratio 4: a little over-expanded at sea level."},
+  bell:{label:"Big bell",type:"hybrid",profile:mkProfile(40,140,31.75,8.255,98.6,41.3,0.8),throatR:8.255,exitR:41.3,chamberR:40,chamberL:140,
+    grain:{outerR:38,portR:12.5,length:120,x0:10},designPc_bar:11,burstPc_bar:40,note:"Vacuum-sized 80 % bell, area ratio 25. At sea level the flow separates inside the nozzle."},
+  kerolox:{label:"Kerolox pressure-fed",type:"liquid",profile:mkProfile(30,110,30,8.255,22,14.3,0),throatR:8.255,exitR:14.3,chamberR:30,chamberL:110,
+    grain:null,fuelCdA_mm2:0.61,designPc_bar:11,burstPc_bar:40,note:"Small pressure-fed LOX / kerosene engine on the same stand. Simplification, stated plainly: the oxidizer side reuses the same lumped gas network; kerosene is fed from a tank at regulator pressure."}
+};
+function randomEngine(seed){
+  let a=(seed>>>0)||1;const rnd=function(){a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};
+  const cR=30+rnd()*15;let gL=90+rnd()*70;let tR=7.6+rnd()*1.4;let eps=2.4+rnd()*3.6;let bell=rnd()<0.5?0.8:0;
+  const design=11;let burst=40;let note="Reasonable design: contraction ratio "+((cR/tR)*(cR/tR)).toFixed(0)+", area ratio "+eps.toFixed(1)+".";
+  const bad=rnd()<1/3,kind=Math.floor(rnd()*3);
+  if(bad&&kind===0){tR*=0.52;burst=1.4*design;note="BAD DESIGN: throat far too small for the flow and a thin case. Expect chamber pressure past the "+burst.toFixed(0)+" bar burst limit.";}
+  else if(bad&&kind===1){eps=30+rnd()*25;bell=0.8;note="BAD DESIGN: bell sized for vacuum, area ratio "+eps.toFixed(0)+". At sea level the flow separates inside the nozzle.";}
+  else if(bad){gL=480+rnd()*90;note="BAD DESIGN: fuel grain far too long. The mixture is too fuel-rich to be flammable, so it will not light.";}
+  const eR=tR*Math.sqrt(eps),cL=gL+20,convL=(cR-tR)*0.9;
+  const divL=(eR-tR)/Math.tan(15*Math.PI/180)*(bell?0.8:1);
+  return {label:"Random #"+(seed>>>0),type:"hybrid",profile:mkProfile(cR,cL,convL,tR,divL,eR,bell),throatR:tR,exitR:eR,chamberR:cR,chamberL:cL,
+    grain:{outerR:cR-2,portR:10+rnd()*4,length:gL,x0:10},designPc_bar:design,burstPc_bar:burst,note:note};
+}
+/* ---- Leo's content module (modules/cards.js on branch leo): teaching cards and incident prose.
+   The main line keeps its own `number` templates because their {placeholders} are wired to the simulation. ---- */
+(function(){const L=(function(){
+/* ==== modules/cards.js — teaching cards + incident reports (pure data) ====
+ * Paste verbatim into the top of engine.html's <script>. No DOM, no side effects.
+ * Contract: INTERFACE.md + LEO.md. Facts: KNOWLEDGE.md §3 (components), §4 (sequence), §5 (failures).
+ *
+ * PLACEHOLDERS used in INCIDENTS[*].number — the main line substitutes live values:
+ *   {T2}      °C    gas temperature in the dead line after adiabatic compression (KNOWLEDGE §5.1)
+ *   {Pc}      bar   chamber pressure (PT-4) at the moment of the ending
+ *   {Pburst}  bar   the engine's burst limit = ENGINES[key].burstPc_bar
+ *   {Pspike}  bar   peak chamber pressure of the hard-start spike
+ *   {dP}      %     injector pressure drop AS A PERCENTAGE OF Pc  (= 100 * dP_bar / Pc; limit is 20 %)
+ *   {Pman}    bar   manifold pressure (PT-3), downstream of the regulator
+ *   {Pbottle} bar   oxygen bottle pressure (PT-2)
+ *   {Ppurge}  bar   nitrogen purge pressure at shutdown (0 if purge was never opened)
+ *   {tburn}   s     burn time, main valve open to main valve closed / ending
+ *   {OF}      —     oxidizer-to-fuel mass ratio (no unit)
+ *   {thrust}  N     average thrust over the burn
+ *   {Isp}     s     specific impulse
+ *   {impulse} N·s   total impulse = thrust integrated over the burn
+ * Not used: none — all thirteen allowed names appear at least once below.
+ *
+ * Numbers NOT from KNOWLEDGE.md (flagged per the rules):
+ *   - "limit 400 °C" on the ADIABATIC line comes from the LEO.md contract example, not KNOWLEDGE.md.
+ *   - BURST and BURN_THROUGH have no entry in KNOWLEDGE §5. Their wording follows PROMPT.md
+ *     ("throat too small for the flow…", "burn too long, so the grain burns through to the wall"),
+ *     INTERFACE.md (burstPc_bar) and KNOWLEDGE §4 (shutdown on timer + Pc). No numbers were invented.
+ *   - NO_LIGHT causes ("no oxygen flow / mix that cannot burn") follow PROMPT.md ("igniter fired with no
+ *     oxidizer, or mixture outside the flammable range"); the 30-minute rule and 1.0 s window are KNOWLEDGE §4.
+ */
+
+const CARDS = {
+  CYL: {
+    name: "OXYGEN BOTTLE",
+    what: "Holds the oxygen, squeezed to 150–200 bar. Everything downstream exists to tame that pressure.",
+    without: "No oxygen, no burn. But if that full pressure ever gets loose downstream, pipes burst."
+  },
+  PR1: {
+    name: "REGULATOR",
+    what: "Steps bottle pressure down to a steady 20–60 bar. Its setting is the throttle: more pressure pushes more oxygen through the injector holes.",
+    without: "Set it wrong and the engine gets the wrong flow. If it fails, full bottle pressure shoots downstream."
+  },
+  RV3: {
+    name: "RELIEF VALVE 70 BAR",
+    what: "A safety valve just after the regulator. It stays shut until pressure hits 70 bar, then opens and dumps the excess.",
+    without: "If the regulator fails, full bottle pressure hits the pipes downstream. They burst."
+  },
+  HV3: {
+    name: "HAND VALVE",
+    what: "A shut-off valve you turn by hand. It stays closed whenever people are at the stand.",
+    without: "If a remote valve fails, nothing else stands between the crew and the oxygen."
+  },
+  FL1: {
+    name: "FILTER 40 µm",
+    what: "Catches specks of grit down to 40 thousandths of a millimetre. It sits UPSTREAM of the main valve, on purpose.",
+    without: "Grit slamming into metal is the number-one way high-pressure oxygen fires start. Leave it out, or fit it on the wrong side, and the line itself can catch fire."
+  },
+  MV1: {
+    name: "MAIN VALVE",
+    what: "Air-powered valve that lets oxygen into the engine. It opens slowly, over 0.4–0.8 s, and shuts by itself if power is lost.",
+    without: "Snap it open and the gas trapped in the dead pipe is squeezed so fast it heats up like air in a bike pump. 40 bar into a 1 bar pipe gives 568 °C — enough to light the line."
+  },
+  NV1: {
+    name: "NEEDLE VALVE",
+    what: "A fine adjusting valve on the main valve's air exhaust. It sets how slowly the main valve opens.",
+    without: "Set too loose, the main valve snaps open and you risk a line fire. Fitted on the air inlet side instead, the valve's actuator sticks."
+  },
+  IP1: {
+    name: "INJECTOR PLATE",
+    what: "The real metering element: a swappable plate of small holes that sets the oxygen flow. The pressure drop across it must be at least 20 % of chamber pressure.",
+    without: "A bare Ø10 inlet drops only 0.011 bar — zero stiffness — so the chamber pushes back on the feed. Flow and pressure chase each other: guaranteed chug."
+  },
+  PV3: {
+    name: "N2 PURGE VALVE",
+    what: "Blows nitrogen through the line: pre-fill before firing, then put out the fire and sweep leftover oxygen after. It is normally open, so losing power opens it.",
+    without: "No purge at shutdown, and the flame creeps back into the plumbing. No pre-fill, and a fast valve opening can light the line."
+  },
+  CK2: {
+    name: "CHECK VALVES ×2",
+    what: "Two one-way valves in a row on the nitrogen line. Gas may flow toward the engine, never back.",
+    without: "One alone cannot be trusted to stop oxygen creeping back into the nitrogen bottle. Then you own a high-pressure bottle and nobody knows what is in it."
+  },
+  PV1: {
+    name: "VENT VALVE",
+    what: "Lets the pressure out of the stand. Power holds it shut, so it opens by itself if power, air or signal is lost.",
+    without: "A dead stand would sit there full of high-pressure oxygen. This is the most important fail-safe on the whole stand."
+  },
+  RV1: {
+    name: "RELIEF VALVE 75 BAR",
+    what: "Opens at 75 bar to let overpressure out. It has its own port, and no shut-off valve is ever allowed upstream of it.",
+    without: "Without it, only the burst disc is left against overpressure. A shut-off valve upstream would cut it off from the pressure it guards, so that is never allowed."
+  },
+  RD1: {
+    name: "BURST DISC 90 BAR",
+    what: "The last resort: a disc that breaks open at 90 bar if the relief valve is not enough. It has its own separate port.",
+    without: "If it shared a port with the relief valve, that one port would be a single point of failure. Lose the port and both safeties are gone at once."
+  },
+  PT2: {
+    name: "PT-2 BOTTLE PRESSURE",
+    what: "Pressure sensor on the bottle side. Before firing, the crew checks that its reading makes sense.",
+    without: "A reading that does not add up means a leak or a bad sensor. Without it you would never know."
+  },
+  PT3: {
+    name: "PT-3 MANIFOLD PRESSURE",
+    what: "Pressure sensor on the manifold, the pipe just before the injector. It shows the pressure actually feeding the engine.",
+    without: "Its blind branch pipe must be no longer than 3 times its inside diameter. Longer, and it becomes one more dead pocket for slammed oxygen to heat up."
+  },
+  PT4: {
+    name: "PT-4 CHAMBER PRESSURE",
+    what: "Pressure sensor inside the combustion chamber. Rising chamber pressure is the only trusted proof that the engine has lit.",
+    without: "You would have to judge ignition by 'seeing fire', and that is not trusted. Open the oxygen on a false 'lit' and you get a hard start."
+  },
+  ARM: {
+    name: "ARM KEY",
+    what: "The one physical lock on the igniter circuit. The test conductor puts it in, takes it out, and keeps it in their own pocket.",
+    without: "With the key out and in the conductor's pocket, the igniter circuit is open and cannot fire. Without it, nothing physical guards the igniter."
+  },
+  IGN: {
+    name: "IGNITER",
+    what: "Makes the first flame inside the chamber. The rule is: fire first, oxygen second.",
+    without: "Swap the order and a burnable mix fills the chamber before the flame arrives. It all lights at once — a hard start."
+  },
+  ABORT: {
+    name: "ABORT",
+    what: "Anyone may shout it, at any time. One press: main valve shuts, vent opens, purge blows.",
+    without: "After T−0 the sequence runs itself, because a human reacts in about 0.3 s — slower than the whole ignition start. Abort is the only input people keep."
+  }
+};
+
+const INCIDENTS = {
+  NO_LIGHT: {
+    title: "Misfire — no ignition",
+    happened: "The igniter fired, but chamber pressure never rose. No pressure rise means no ignition, whatever your eyes say.",
+    number: "Pc = {Pc} bar  (must rise within 1.0 s of the igniter)  ·  O/F = {OF}",
+    prevent: "Nobody moves for 30 minutes — by the clock, not by judgement. Next time, check there is oxygen flow and a mix that can burn."
+  },
+  HARD_START: {
+    title: "Hard start",
+    happened: "Oxygen got in before the flame. A burnable mix filled the chamber and lit all at once.",
+    number: "Pspike = {Pspike} bar  (chamber design pressure 40 bar)",
+    prevent: "Fire first, oxygen second. Wait for chamber pressure to rise before the main valve opens."
+  },
+  ADIABATIC: {
+    title: "Line fire",
+    happened: "Oxygen slammed into a low-pressure dead pipe and squeezed the gas until it was hot enough to light the line. A 2007 cold-flow test at Scaled Composites killed three — no igniter, no fuel.",
+    number: "T2 = {T2} °C  (limit 400 °C)",
+    prevent: "Do both: pre-fill the line with nitrogen to at least 1/3 of upstream pressure, and open the main valve over 0.3 s or more. 40 bar into 1 bar gives 568 °C; pre-filled to 15 bar, only 115 °C."
+  },
+  CHUG: {
+    title: "Chug",
+    happened: "The injector's pressure drop was too small, so the chamber pushed back on the feed. Flow and pressure chased each other in a low, heavy shake.",
+    number: "Injector drop = {dP} % of Pc  (minimum 20 %)",
+    prevent: "Fit the injector plate with small holes, so the drop is at least 20 % of chamber pressure. Our real engine runs 24.6–31.4 %."
+  },
+  BURST: {
+    title: "Chamber burst",
+    happened: "The throat was too small for the flow, so pressure piled up behind it. The chamber split open.",
+    number: "Pc = {Pc} bar  (burst limit {Pburst} bar)",
+    prevent: "Read the engine's design pressure before you set the regulator. A bad random engine says so in its note."
+  },
+  BURN_THROUGH: {
+    title: "Burn-through",
+    happened: "The burn ran too long. The wax fuel burned away and the flame reached the bare chamber wall.",
+    number: "Burn time = {tburn} s  (fuel grain used up — wall exposed)",
+    prevent: "Shut the main valve at the planned burn time. The real stand uses two triggers for that: a timer and chamber pressure."
+  },
+  FLASHBACK: {
+    title: "Flashback",
+    happened: "At shutdown the purge was missing, or weaker than the chamber. The flame ran backwards through the injector into the manifold.",
+    number: "Purge = {Ppurge} bar  vs  Pc = {Pc} bar  (purge must be higher)",
+    prevent: "Open the nitrogen purge 0.5 s after the main valve closes and keep it on for 30 s. Purge must beat chamber pressure: 25 bar against 12."
+  },
+  REG_FAIL: {
+    title: "Regulator failed — relief valve held",
+    happened: "The regulator failed and full bottle pressure rushed downstream. Relief valve RV-3 lifted at 70 bar and dumped it.",
+    number: "Manifold = {Pman} bar  (relief lifts at 70 bar)  ·  bottle = {Pbottle} bar",
+    prevent: "Nothing to fix: the safety design worked. Without RV-3, that pressure would have burst the downstream pipes."
+  },
+  POWER_CUT: {
+    title: "Power cut — stand made itself safe",
+    happened: "All power was lost. Every valve fell to its resting position: main valve shut, vent open, purge open.",
+    number: "Manifold = {Pman} bar and falling to 0  (vent valve is normally-open)",
+    prevent: "Nothing to fix: this is fail-safe design working. Each valve was chosen so that 'no power' means 'safe'."
+  },
+  CLEAN_RUN: {
+    title: "Clean run",
+    happened: "Pre-fill, fire first, slow valve, steady burn, purge, vent. Every step in order, every number inside its limit.",
+    number: "Thrust {thrust} N  ·  Isp {Isp} s  ·  Burn {tburn} s  ·  Total impulse {impulse} N·s",
+    prevent: "You pre-filled with nitrogen, lit the igniter before the oxygen, and opened the main valve slowly. Then you purged, vented and pulled the ARM key."
+  }
+};
+/* ==== end modules/cards.js ==== */
+
+;return {CARDS:CARDS,INCIDENTS:INCIDENTS};})();
+ for(const k in L.CARDS)if(CARDS[k]){const c=L.CARDS[k];if(c.name)CARDS[k].name=c.name;if(c.what)CARDS[k].what=c.what;if(c.without)CARDS[k].without=c.without;}
+ for(const k in L.INCIDENTS)if(INCIDENTS[k]){const c=L.INCIDENTS[k];if(c.happened)INCIDENTS[k].happened=c.happened;if(c.prevent)INCIDENTS[k].prevent=c.prevent;}
+})();
+/* ==== END CONTENT MODULES ==== */
+
+/* ---- 0 Utilities ---- */
+const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t;
+const fmt=(v,d)=>Number.isFinite(v)?v.toFixed(d===undefined?1:d):"–";
+
+/* ---- 1 Constants: every tunable lives here, SI units ---- */
+const PARAMS = {
+  DT:1e-4,            // s, fixed physics step
+  sampleDT:1/30,      // s, plot sampling interval (sim time)
+  meterDT:1e-3,       // s, independent flow-meter sampling interval
+  Pa:101325,          // Pa
+  Tamb:293,           // K
+  g0:9.80665,         // m/s2
+  R_O2:259.8, R_N2:296.8, gCold:1.4,   // J/kg/K
+  bottleV:0.050, bottleP0:180e5,        // m3, Pa (50 L cylinder)
+  regSet:40e5, regCdA:12e-6, regDroop:0.05,   // Pa, m2 seat, fraction
+  upV:3e-4,           // m3 regulator-to-main-valve line
+  rv3Set:70e5, rv3CdA:40e-6,
+  mvCdA:60e-6, mvCloseTime:0.1, mvOpenTime:0.5, mvExp:3,   // ball valve: area ~ stroke^3
+  lineV:1e-4,         // m3 line between main valve and feed orifice (PT3)
+  foCdA:9.6e-6,       // m2 choked feed orifice: sets oxygen flow from regulator pressure
+  manV:5e-5,          // m3 injector manifold
+  injOptions:[{label:"24 × Ø2.0 plate (ΔP ≈ 26 % Pc)",CdA:33e-6},{label:"oversize bore, no plate (soft)",CdA:75e-6}],
+  purgeP:30e5, purgeCdA:5e-6,           // N2 regulator, RO-2 restrictor
+  ventCdA:20e-6,
+  rv1Set:75e5, rv1CdA:30e-6, rd1Set:90e5, rd1CdA:50e-6,
+  slugTau:0.12,       // s, heat loss time constant of the compressed gas slug
+  autoIgnT:673,       // K (400 C) ignition limit of line soft goods in O2
+  a:0.403e-3, n:0.5,  // regression r_dot=a*G^n, SI. 0.155e-3 literature paraffin value x2.6 entrainment factor to reproduce the team's O/F 2.0 operating point
+  rhoFuel:900, rhoKero:810,             // kg/m3
+  liquidFuelCdA:0.61e-6,                // m2 fallback if engine does not give fuelCdA_mm2
+  etaCstar:0.93,
+  tauC:1.0e-3,        // s combustion time lag (drives chug)
+  ignDur:4.0, ignMdot:3e-3, ignCstar:1200,
+  lightMinOx:2e-3, lightMinX:0.15, ofLo:0.6, ofHi:10, extinctOx:1e-3, extinctHold:0.02, relightT:900,
+  hardStartFactor:1.5, // x design Pc
+  coolTau:10, purgeCoolTau:1.5, flashT:700, flameSpeed:0.04, flashLen:0.10, reverseT:0.05,
+  chugAmp:0.15, chugStiff:0.20, chugHold:0.4,
+  sepRatio:0.4,       // Summerfield: separation when wall pressure < 0.4 Pa
+  purgeMin:4.0,       // s of post-shutdown purge required for a clean run (real procedure: 30 s)
+  regFailHold:1.2, safeHold:1.5,
+  drawWall_mm:8
+};
+/* CEA-derived fits: curve fits in ln(O/F) to published NASA CEA equilibrium results (order-of-magnitude literature values) */
+const THERMO = {
+  hybrid:{csPk:1765,ofPk:2.4,csK:330,g0:1.19,gK:0.045,TPk:3450,TofPk:2.6,TK:900},
+  liquid:{csPk:1780,ofPk:2.3,csK:360,g0:1.21,gK:0.04,TPk:3600,TofPk:2.5,TK:950}
+};
+function cstarFit(type,of){const f=THERMO[type],l=Math.log(of/f.ofPk);return Math.max(800,f.csPk-f.csK*l*l);}
+function gammaFit(type,of){const f=THERMO[type],l=Math.log(of/f.ofPk);return Math.min(1.33,f.g0+f.gK*l*l);}
+function tflameFit(type,of){const f=THERMO[type],l=Math.log(of/f.TofPk);return Math.max(1000,f.TPk-f.TK*l*l);}
+
+/* ---- 2 Physics model ---- */
+function bigGamma(g){return Math.sqrt(g)*Math.pow(2/(g+1),(g+1)/(2*(g-1)));}
+const G14=bigGamma(1.4), CRIT14=Math.pow(2/2.4,1.4/0.4);
+function flowFactor(pr,g,crit,G){ // 1 when choked, ->0 as pr->1 ; pr = Pdown/Pup
+  if(pr>=1)return 0; if(pr<=crit)return 1;
+  const p=pr>0.999?0.999:pr;
+  let f=Math.sqrt(2*g/(g-1)*(Math.pow(p,2/g)-Math.pow(p,(g+1)/g)))/G;
+  if(pr>0.999)f*=(1-pr)/0.001; return f;
+}
+function gasFlow(CdA,Pu,Pd,R){ if(CdA<=0||Pu<=Pd)return 0; return CdA*Pu/Math.sqrt(R*PARAMS.Tamb)*G14*flowFactor(Pd/Pu,1.4,CRIT14,G14); }
+function areaRatio(M,g){return Math.pow((2/(g+1))*(1+(g-1)/2*M*M),(g+1)/(2*(g-1)))/M;}
+function machFromArea(eps,g){let lo=1,hi=12;for(let i=0;i<50;i++){const m=0.5*(lo+hi);if(areaRatio(m,g)<eps)lo=m;else hi=m;}return 0.5*(lo+hi);}
+const NOZ={F:0,Me:0,Pe:0,CF:0,sep:false,epsUsed:0,Mj:0,epsJ:1};
+function nozzle(Pc,g,eps,At){ // ideal-rocket relations + Summerfield separation; writes NOZ (no allocation)
+  const Pa=PARAMS.Pa; NOZ.sep=false; NOZ.epsUsed=eps;
+  if(!(Pc>Pa*1.002)){NOZ.F=0;NOZ.Me=0;NOZ.Pe=Pa;NOZ.CF=0;NOZ.Mj=0;NOZ.epsJ=1;return NOZ;}
+  const e=(g-1)/g, crit=Math.pow((g+1)/2,g/(g-1));
+  const Mj=Math.sqrt(2/(g-1)*(Math.pow(Pc/Pa,e)-1)); NOZ.Mj=Mj;
+  if(Pc/Pa<crit){NOZ.Me=Mj;NOZ.Pe=Pa;NOZ.F=(Pc-Pa)*At;NOZ.CF=NOZ.F/(Pc*At);NOZ.epsJ=1;return NOZ;}
+  NOZ.epsJ=areaRatio(Mj,g);
+  let Me=machFromArea(eps,g), Pe=Pc*Math.pow(1+(g-1)/2*Me*Me,-g/(g-1)), eu=eps;
+  if(Pe<PARAMS.sepRatio*Pa){NOZ.sep=true;Pe=PARAMS.sepRatio*Pa;Me=Math.sqrt(2/(g-1)*(Math.pow(Pc/Pe,e)-1));eu=Math.min(eps,areaRatio(Me,g));}
+  const CF=Math.sqrt(2*g*g/(g-1)*Math.pow(2/(g+1),(g+1)/(g-1))*(1-Math.pow(Pe/Pc,e)))+(Pe-Pa)/Pc*eu;
+  NOZ.Me=Me;NOZ.Pe=Pe;NOZ.CF=CF;NOZ.F=Math.max(0,CF*Pc*At);NOZ.epsUsed=eu;return NOZ;
+}
+
+/* ---- 3 State and time integration ---- */
+let S=null;
+const C={hv3:false,mvCmd:false,mvTime:PARAMS.mvOpenTime,purge:false,vent:true,arm:false,keyWasIn:false,regSet:PARAMS.regSet,regFailed:false,power:true,injIdx:0,aborted:false,goPolled:false};
+const NRING=1200;
+function newSim(eng){
+  const P=PARAMS,T=P.Tamb,g=eng.grain,pr=eng.profile;
+  let V=0,xt=0,rmin=1e9;
+  for(let i=0;i<pr.length;i++)if(pr[i][1]<rmin){rmin=pr[i][1];xt=i;}
+  for(let i=1;i<=xt;i++){const r=0.5*(pr[i][1]+pr[i-1][1])/1000;V+=Math.PI*r*r*(pr[i][0]-pr[i-1][0])/1000;}
+  const nD=Math.max(1,Math.round(P.tauC/P.DT));
+  const mB=P.bottleP0*P.bottleV/(P.R_O2*T);
+  return {t:0,eng:eng,type:eng.type,At:Math.PI*eng.throatR*eng.throatR*1e-6,eps:(eng.exitR/eng.throatR)*(eng.exitR/eng.throatR),Vprof:V,
+    mB:mB,mB0:mB,mU:C.regSet*P.upV/(P.R_O2*T),mU0:C.regSet*P.upV/(P.R_O2*T),
+    fO:0,fN:P.Pa*P.lineV/(P.R_N2*T),mO:0,mN:P.Pa*P.manV/(P.R_N2*T),
+    Pb:P.bottleP0,Pu:C.regSet,Pf:P.Pa,Pm:P.Pa,xF:0,xM:0,
+    Pc:P.Pa,xO:0,lit:false,everLit:false,tLight:0,
+    r:g?g.portR/1000:0,r0:g?g.portR/1000:0,L:g?g.length/1000:0,Ro:g?g.outerR/1000:0,
+    fuelCdA:(eng.fuelCdA_mm2?eng.fuelCdA_mm2*1e-6:P.liquidFuelCdA),
+    mvOpen:0,ignT:0,ignUsed:false,Tslug:T,TslugPk:T,pfAtOpen:P.Pa,hot:T,creep:0,waitNoPurge:0,revT:0,lowOxT:0,mT:0,
+    ringOx:new Float64Array(nD),ringN2:new Float64Array(nD),ri:0,nD:nD,
+    qReg:0,qRv3:0,qMv:0,qPurge:0,qVent:0,qRv1:0,qRd1:0,qFo:0,qInj:0,qFuel:0,oxD:0,rd1Burst:false,rv3Lift:0,rv1Lift:0,
+    OF:NaN,cs:NaN,gam:1.4,Tc:NaN,stiff:NaN,F:0,
+    fuelBurned:0,oxBurned:0,sumOxN:0,prevOxN:0,burnT:0,impulse:0,pcPeak:P.Pa,ofStart:NaN,ofEnd:NaN,prevF:0,
+    meter:0,prevMeterQ:0,o2Lead:0,prePurge:0,purgeAfter:0,rvT:0,safeT:0,cutT:NaN,pfAtCut:NaN,
+    wMin:1e12,wMax:0,wSum:0,wSt:0,wN:0,wT:0,chugT:0,chugAmp:0,
+    sT:0,ring:{t:new Float32Array(NRING),pc:new Float32Array(NRING),f:new Float32Array(NRING),pb:new Float32Array(NRING),n:0,i:0},
+    ending:null,frozen:false,fault:null};
+}
+function end(code,data){ if(S.ending)return; S.ending={code:code,data:data}; S.frozen=true; }
+function step(dt){
+  const P=PARAMS,T=P.Tamb,s=S; if(s.frozen)return;
+  // valves
+  const tgt=(C.mvCmd&&C.power)?1:0;
+  if(s.mvOpen<tgt)s.mvOpen=Math.min(1,s.mvOpen+dt/C.mvTime); else if(s.mvOpen>tgt)s.mvOpen=Math.max(0,s.mvOpen-dt/P.mvCloseTime);
+  if(s.ignT>0){s.ignT-=dt; if(s.ignT<=0){s.ignT=0; if(!s.everLit){end("NO_LIGHT",{ox:fmt(s.oxD*1000,1),of:fmt(s.OF,2),lo:P.ofLo,hi:P.ofHi});return;}}}
+  const ign=s.ignT>0;
+  // node pressures
+  const Pb=s.mB*P.R_O2*T/P.bottleV, Pu=s.mU*P.R_O2*T/P.upV;
+  const mF=s.fO+s.fN, xF=s.fO/mF, Rf=(s.fO*P.R_O2+s.fN*P.R_N2)/mF, Pf=mF*Rf*T/P.lineV;
+  const mM=s.mO+s.mN, xM=s.mO/mM, Rm=(s.mO*P.R_O2+s.mN*P.R_N2)/mM, Pm=mM*Rm*T/P.manV;
+  // feed network flows
+  const lift=C.regFailed?1:clamp((C.regSet-Pu)/(P.regDroop*C.regSet),0,1);
+  const qReg=gasFlow(P.regCdA*lift,Pb,Pu,P.R_O2);
+  const rvl=clamp((Pu-P.rv3Set)/(0.05*P.rv3Set),0,1), qRv3=gasFlow(P.rv3CdA*rvl,Pu,P.Pa,P.R_O2);
+  const qMv=C.hv3?gasFlow(P.mvCdA*Math.pow(s.mvOpen,P.mvExp),Pu,Pf,P.R_O2):0;
+  const qPurge=C.purge?gasFlow(P.purgeCdA,P.purgeP,Pf,P.R_N2):0;   // two check valves: gasFlow is zero when Pf > purge pressure
+  const qVent=C.vent?gasFlow(P.ventCdA,Pf,P.Pa,Rf):0;
+  const rv1l=clamp((Pf-P.rv1Set)/(0.05*P.rv1Set),0,1), qRv1=gasFlow(P.rv1CdA*rv1l,Pf,P.Pa,Rf);
+  if(Pf>P.rd1Set)s.rd1Burst=true;
+  const qRd1=s.rd1Burst?gasFlow(P.rd1CdA,Pf,P.Pa,Rf):0;
+  const qFo=gasFlow(P.foCdA,Pf,Pm,Rf);
+  const injCdA=P.injOptions[C.injIdx].CdA;
+  const qInj=gasFlow(injCdA,Pm,s.Pc,Rm);
+  // combustion time lag (ring buffer)
+  const oxD=s.ringOx[s.ri], n2D=s.ringN2[s.ri]; s.ringOx[s.ri]=qInj*xM; s.ringN2[s.ri]=qInj*(1-xM); s.ri=(s.ri+1)%s.nD;
+  // fuel
+  let rdot=0,qFuelPot;
+  if(s.type==="hybrid"){const G=oxD/(Math.PI*s.r*s.r); rdot=P.a*Math.pow(G,P.n); qFuelPot=P.rhoFuel*2*Math.PI*s.r*s.L*rdot;}
+  else qFuelPot=C.hv3?s.fuelCdA*Math.pow(s.mvOpen,P.mvExp)*Math.sqrt(2*P.rhoKero*Math.max(0,C.regSet-s.Pc)):0;
+  const OF=qFuelPot>1e-9?oxD/qFuelPot:Infinity;
+  if(!s.lit&&!ign&&oxD>P.lightMinOx)s.o2Lead+=dt;
+  // light-off: needs an ignition source, oxidizer, and a flammable mixture
+  if(!s.lit&&(ign||s.hot>P.relightT)&&oxD>P.lightMinOx&&s.xO>P.lightMinX&&OF>=P.ofLo&&OF<=P.ofHi){
+    s.lit=true;s.everLit=true;s.tLight=s.t;
+    if(s.xO>0.5){ // premixed charge burns at constant volume: P2/P1 = (T2/T1)(M1/M2)
+      const ratio=tflameFit(s.type,OF)/T*(32/24), pk=s.Pc*(1+s.xO*(ratio-1));
+      s.Pc=pk; if(pk>s.pcPeak)s.pcPeak=pk;
+      if(pk>P.hardStartFactor*s.eng.designPc_bar*1e5){end("HARD_START",{pk:fmt(pk/1e5,1),design:fmt(s.eng.designPc_bar,0),lead:fmt(s.o2Lead,2)});return;}
+    }
+  }
+  let cs,g,qFuel=0;
+  if(s.lit){
+    qFuel=qFuelPot; const xN=n2D/(oxD+n2D+1e-12);
+    cs=P.etaCstar*cstarFit(s.type,OF)*(1-0.6*xN); g=gammaFit(s.type,OF);
+    s.OF=OF;s.cs=cs;s.gam=g;s.Tc=tflameFit(s.type,OF);s.hot=s.Tc;
+    if(s.type==="hybrid")s.r+=rdot*dt;
+    s.fuelBurned+=qFuel*dt; s.oxBurned+=oxD*dt; s.burnT+=dt;
+    const oxN=Math.pow(oxD,P.n); s.sumOxN+=0.5*(oxN+s.prevOxN)*dt; s.prevOxN=oxN;
+    if(!(s.ofStart===s.ofStart)&&s.t-s.tLight>0.3)s.ofStart=OF; s.ofEnd=OF;
+    if(oxD<P.extinctOx){s.lowOxT+=dt;if(s.lowOxT>P.extinctHold){s.lit=false;s.prevOxN=0;s.lowOxT=0;}} else s.lowOxT=0;
+  } else {
+    const Rc=s.xO*P.R_O2+(1-s.xO)*P.R_N2; cs=Math.sqrt(Rc*T)/G14; g=P.gCold; s.OF=OF; s.cs=NaN; s.gam=g; s.Tc=NaN;
+    s.hot+=(-(s.hot-T)/P.coolTau-(n2D/0.03)*(s.hot-T)/P.purgeCoolTau)*dt;
+  }
+  // chamber mass balance through the (choked or not) throat, semi-implicit in Pc
+  const Vc=s.Vprof-(s.type==="hybrid"?Math.PI*(s.Ro*s.Ro-s.r*s.r)*s.L:0);
+  const Gm=bigGamma(g), k=(cs*Gm)*(cs*Gm)/Vc, mIn=oxD+n2D+qFuel+(ign?P.ignMdot:0);
+  const ff=flowFactor(P.Pa/s.Pc,g,Math.pow(2/(g+1),g/(g-1)),Gm);
+  s.Pc=(s.Pc+k*mIn*dt)/(1+k*s.At*ff/cs*dt);
+  if(s.Pc>s.pcPeak)s.pcPeak=s.Pc;
+  if(s.lit)s.xO=0; else {const mC=s.Pc*Vc/((s.xO*P.R_O2+(1-s.xO)*P.R_N2)*T); s.xO=clamp(s.xO+(oxD-s.xO*mIn)/mC*dt,0,1);}
+  // integrate feed masses (explicit Euler)
+  const out=qVent+qRv1+qRd1+qFo;
+  s.mB-=qReg*dt; s.mU+=(qReg-qRv3-qMv)*dt;
+  s.fO+=(qMv-out*xF)*dt; s.fN+=(qPurge-out*(1-xF))*dt;
+  s.mO+=(qFo*xF-qInj*xM)*dt; s.mN+=(qFo*(1-xF)-qInj*(1-xM))*dt;
+  // adiabatic compression of the gas slug in the line, with heat loss to the wall
+  const mF2=s.fO+s.fN, PfN=(s.fO*P.R_O2+s.fN*P.R_N2)*T/P.lineV;
+  s.Tslug+=s.Tslug*(0.4/1.4)*(PfN-Pf)/Pf-(s.Tslug-T)/P.slugTau*dt;
+  if(s.Tslug>s.TslugPk)s.TslugPk=s.Tslug;
+  if(s.Tslug>P.autoIgnT&&s.fO/mF2>0.5&&PfN>3e5){end("ADIABATIC",{T2:fmt(P.Tamb*Math.pow(Math.max(C.regSet,PfN)/Math.max(s.pfAtOpen,1e4),0.2857)-273.15,0),lim:fmt(P.autoIgnT-273.15,0),P1:fmt(s.pfAtOpen/1e5,1),P2:fmt(Math.max(C.regSet,PfN)/1e5,0),ramp:fmt(C.mvTime,2)});return;}
+  // publish
+  s.Pb=Pb;s.Pu=Pu;s.Pf=PfN;s.Pm=Pm;s.xF=xF;s.xM=xM;s.qReg=qReg;s.qRv3=qRv3;s.qMv=qMv;s.qPurge=qPurge;s.qVent=qVent;s.qRv1=qRv1;s.qRd1=qRd1;s.qFo=qFo;s.qInj=qInj;s.qFuel=qFuel;s.oxD=oxD;
+  s.rv3Lift=rvl;s.rv1Lift=rv1l; s.stiff=s.lit?(Pm-s.Pc)/s.Pc:NaN;
+  // ---- endings from state ----
+  if(s.lit){
+    if(s.Pc>s.eng.burstPc_bar*1e5){end("BURST",{pc:fmt(s.Pc/1e5,1),burst:fmt(s.eng.burstPc_bar,0),dt:fmt(s.eng.throatR*2,1)});return;}
+    if(s.type==="hybrid"&&s.r>=s.Ro){end("BURN_THROUGH",{port:fmt(s.r*2000,1),od:fmt(s.Ro*2000,0),tb:fmt(s.burnT,1)});return;}
+    if(s.Pc>Pm){s.revT+=dt; if(s.revT>P.reverseT){end("FLASHBACK",{wait:fmt(s.revT,2),xo:fmt(xM*100,0),hot:fmt(s.hot-273.15,0)});return;}} else s.revT=0;
+    // chug detector: measured Pc swing over 50 ms windows while stiffness is under the limit
+    s.wMin=Math.min(s.wMin,s.Pc);s.wMax=Math.max(s.wMax,s.Pc);s.wSum+=s.Pc;s.wSt+=s.stiff;s.wN++;s.wT+=dt;
+    if(s.wT>=0.05){const mean=s.wSum/s.wN,amp=(s.wMax-s.wMin)/mean,st=s.wSt/s.wN; s.chugAmp=amp;
+      if(s.t-s.tLight>0.4&&amp>P.chugAmp&&st<P.chugStiff)s.chugT+=s.wT; else s.chugT=Math.max(0,s.chugT-s.wT);
+      s.wMin=1e12;s.wMax=0;s.wSum=0;s.wSt=0;s.wN=0;s.wT=0;
+      if(s.chugT>=P.chugHold){end("CHUG",{stiff:fmt(st*100,1),amp:fmt(amp*100,0)});return;}}
+  } else {
+    if(s.everLit&&s.hot>P.flashT&&xM>0.5){ // flame creeps upstream when the injector velocity is below flame speed
+      const v=qInj/(Pm/(Rm*T)*injCdA); s.waitNoPurge+=dt;
+      if(v<P.flameSpeed)s.creep+=(P.flameSpeed-v)*dt;
+      if(s.creep>P.flashLen){end("FLASHBACK",{wait:fmt(s.waitNoPurge,1),xo:fmt(xM*100,0),hot:fmt(s.hot-273.15,0)});return;}
+    } else if(xM<=0.5)s.creep=0;
+    if(s.everLit&&C.purge)s.purgeAfter+=dt;
+    if(!s.everLit&&C.purge)s.prePurge+=dt;
+  }
+  if(rvl>0){s.rvT+=dt; if(s.rvT>P.regFailHold){end("REG_FAIL",{pu:fmt(Pu/1e5,1),set:fmt(P.rv3Set/1e5,0),pb:fmt(Pb/1e5,0)});return;}} else s.rvT=0;
+  if(!C.power){ if(!s.lit&&s.mvOpen===0&&xF<0.05){s.safeT+=dt; if(s.safeT>P.safeHold){end("POWER_CUT",{ts:fmt(s.t-s.cutT,1),pf0:fmt(s.pfAtCut/1e5,1),xo:fmt(xF*100,0)});return;}} else s.safeT=0; }
+  else if(s.everLit&&!s.lit&&C.keyWasIn&&!C.arm&&C.vent&&!C.mvCmd&&!C.purge&&PfN<1.5e5&&s.purgeAfter>=Math.min(P.purgeMin,1.0)){
+    let grade=0;const notes=[];
+    if(s.prePurge<2){grade++;notes.push("pre-fire purge was skipped");}
+    if(!C.goPolled){grade++;notes.push("no GO / NO-GO poll");}
+    if(C.mvTime<0.3){grade++;notes.push("main valve opened faster than 0.3 s");}
+    if(C.aborted){grade++;notes.push("run ended on ABORT");}
+    if(s.burnT<2){grade++;notes.push("burn shorter than 2 s");}
+    end("CLEAN_RUN",{pk:fmt(s.pcPeak/1e5,1),F:fmt(s.impulse/Math.max(s.burnT,1e-6),0),I:fmt(s.impulse,0),isp:fmt(s.impulse/(P.g0*(s.fuelBurned+s.oxBurned)),0),tb:fmt(s.burnT,1),of0:fmt(s.ofStart,2),of1:fmt(s.ofEnd,2),grade:"ABCDF".charAt(Math.min(4,grade)),notes:notes.length?"Report card deductions: "+notes.join("; ")+".":"Nothing to fix: every step in order. Do it the same way next time."});return;}
+  // sampling: plots, thrust/impulse, independent 30 Hz flow meter
+  s.t+=dt; s.sT+=dt; s.mT+=dt;
+  if(s.mT>=P.meterDT){s.meter+=0.5*(qReg+s.prevMeterQ)*s.mT;s.prevMeterQ=qReg;s.mT=0;} // flow meter at the regulator, 1 kHz, trapezoid rule
+  if(s.sT>=P.sampleDT){
+    nozzle(s.Pc,g,s.eps,s.At); s.F=NOZ.F;
+    if(s.lit||s.prevF>0)s.impulse+=0.5*(NOZ.F+s.prevF)*s.sT; s.prevF=s.lit?NOZ.F:0;
+    const R=s.ring; R.t[R.i]=s.t;R.pc[R.i]=s.Pc;R.f[R.i]=NOZ.F;R.pb[R.i]=Pb;R.i=(R.i+1)%NRING;if(R.n<NRING)R.n++;
+    s.sT=0;
+  }
+}
+function checkFault(){const s=S;const names=["Pc","Pf","Pm","mB","mU","r","Tslug"];const v=[s.Pc,s.Pf,s.Pm,s.mB,s.mU,s.r,s.Tslug];
+  for(let i=0;i<v.length;i++)if(!Number.isFinite(v[i])||v[i]<0){s.fault="SOLVER FAULT: "+names[i]+" = "+v[i]+" — simulation halted";s.frozen=true;return;}}
+function verifyRows(out){ // three genuinely independent pairs; out is a preallocated Float64Array(6)
+  const P=PARAMS,s=S,e=2*P.n+1;
+  out[0]=(s.r-s.r0)*1000; out[1]=(Math.pow(Math.pow(s.r0,e)+e*P.a*Math.pow(Math.PI,-P.n)*s.sumOxN,1/e)-s.r0)*1000;
+  out[2]=s.fuelBurned*1000; out[3]=P.rhoFuel*Math.PI*(s.r*s.r-s.r0*s.r0)*s.L*1000;
+  out[4]=(s.mB0-s.mB)*1000; out[5]=s.meter*1000;
+}
+
+/* ======================= UI (browser only) ======================= */
+function boot(){
+const $=id=>document.getElementById(id);
+const COL={bg:"#070a12",panel:"#101725",line:"#232d44",text:"#e9eef7",muted:"#8b98b2",amber:"#ffb347",flame:"#ff7a1a",cyan:"#5fd3ff",green:"#6ee7a0",red:"#ff5c6c",n2:"#b58cff",pipe:"#2a3550",metal:"#56627c"};
+const DASH=[7,11],NODASH=[];
+let engKey="ast91",eng=ENGINES.ast91,mode="guided",timeScale=1,acc=0,stepIdx=0,hintMsg="",endT=0,reportShown=false,seedCtr=(Date.now()&0xffff)|1;
+const VW=1200,VH=540,AX=300,FACE=585;
+let kmm=1.4; // virtual units per mm for the engine cutaway
+
+/* ---- 4 Sound: noise + rumble driven by chamber pressure, starts muted ---- */
+let muted=true,rvWas=false;
+function audioUpdate(){
+  if(muted||reportShown||S.frozen){audioSet({pc01:0,mdot01:0,chug01:0});return;}
+  const pcb=(S.Pc-PARAMS.Pa)/1e5;
+  if(S.lit)audioSet({pc01:clamp(pcb/(1.3*eng.designPc_bar),0,1),mdot01:clamp((S.oxD+S.qFuel)/0.2,0,1),chug01:clamp(S.chugAmp/0.3,0,1)});
+  else audioSet({pc01:clamp(S.qInj*0.6+S.qVent*0.4+S.qRv3*0.3,0,0.15),mdot01:0,chug01:0});
+  const rv=S.rv3Lift>0.05||S.rv1Lift>0.05;if(rv&&!rvWas)audioOneShot('relief');rvWas=rv;
+}
+
+/* ---- 5 Canvas plumbing ---- */
+function mkCanvas(el){const o={el:el,ctx:el.getContext("2d"),w:0,h:0,dpr:1};fit(o);return o;}
+function fit(o){const r=o.el.getBoundingClientRect(),d=window.devicePixelRatio||1;o.dpr=d;o.w=Math.max(50,r.width);o.h=Math.max(50,r.height);o.el.width=Math.round(o.w*d);o.el.height=Math.round(o.h*d);}
+const cs=mkCanvas($("stand")),cg=mkCanvas($("gauges")),cp=mkCanvas($("plots"));
+const staticLayer=document.createElement("canvas"),gaugeFace=document.createElement("canvas");
+let vs=1,vox=0,voy=0; // virtual -> css px transform
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function vgrad(c,y0,y1,a,b,m){const g=c.createLinearGradient(0,y0,0,y1);g.addColorStop(0,a);g.addColorStop(0.5,m||b);g.addColorStop(1,a);return g;}
+
+/* ---- 6 Stand geometry (virtual units) ---- */
+const PIPES=[
+ {pts:[55,335,55,300,118,300],q:()=>S.qReg,col:()=>COL.cyan,P:()=>S.Pb,off:0},
+ {pts:[142,300,340,300],q:()=>S.qMv,col:()=>COL.cyan,P:()=>S.Pu,off:0},
+ {pts:[185,300,185,262],q:()=>S.qRv3,col:()=>COL.cyan,P:()=>S.Pu,off:0},
+ {pts:[185,240,185,215],q:()=>S.qRv3,col:()=>COL.cyan,P:()=>S.qRv3>0?S.Pu:0,off:0},
+ {pts:[370,300,535,300],q:()=>S.qFo+S.qVent,col:()=>S.xF>0.5?COL.cyan:COL.n2,P:()=>S.Pf,off:0},
+ {pts:[535,300,FACE-8,300],q:()=>S.qInj,col:()=>S.xM>0.5?COL.cyan:COL.n2,P:()=>S.Pm,off:0},
+ {pts:[238,70,410,70,410,300],q:()=>S.qPurge,col:()=>COL.n2,P:()=>C.purge?PARAMS.purgeP:0,off:0},
+ {pts:[425,300,425,352],q:()=>S.qRv1,col:()=>COL.cyan,P:()=>S.Pf,off:0},
+ {pts:[470,300,470,352],q:()=>S.qVent,col:()=>S.xF>0.5?COL.cyan:COL.n2,P:()=>S.Pf,off:0},
+ {pts:[470,376,470,420],q:()=>S.qVent,col:()=>S.xF>0.5?COL.cyan:COL.n2,P:()=>S.qVent>0?S.Pf:0,off:0},
+ {pts:[515,300,515,352],q:()=>S.qRd1,col:()=>COL.cyan,P:()=>S.Pf,off:0}
+];
+const HITS=[
+ {c:"CYL",x:55,y:410,r:42},{c:"PT2",x:90,y:255,r:17},{c:"PR1",x:130,y:300,r:17},{c:"RV3",x:185,y:250,r:16},{c:"HV3",x:240,y:300,r:18,click:1},
+ {c:"FL1",x:295,y:300,r:16},{c:"MV1",x:355,y:292,r:22,click:1},{c:"NV1",x:388,y:258,r:11},{c:"PV3",x:285,y:70,r:18,click:1},{c:"CK2",x:355,y:70,r:24},
+ {c:"PT3",x:450,y:255,r:17},{c:"RV1",x:425,y:364,r:14},{c:"PV1",x:470,y:364,r:16,click:1},{c:"RD1",x:515,y:364,r:14},{c:"IP1",x:FACE-12,y:300,r:14},
+ {c:"PT4",x:615,y:140,r:17},{c:"IGN",x:680,y:140,r:18,click:1},{c:"ARM",x:750,y:140,r:18,click:1}
+];
+const anim={hv3:0,pv3:0,pv1:1,arm:0,flash:0,shock:0,shake:0,ex:0,ey:0,scorch:0,needle:[0,0,0],needleV:[0,0,0],sparkT:0};
+const FXE=fxExplosionCreate(),FXM=fxMisfireCreate();
+
+function layout(){
+  fit(cs);fit(cg);fit(cp);
+  vs=Math.min(cs.w/VW,cs.h/VH);vox=(cs.w-VW*vs)/2;voy=(cs.h-VH*vs)/2;
+  const pr=eng.profile,len=pr[pr.length-1][0]+24;let maxR=0;for(let i=0;i<pr.length;i++)maxR=Math.max(maxR,pr[i][1]);
+  kmm=Math.min(335/len,118/(maxR+PARAMS.drawWall_mm+6));
+  drawStatic();drawGaugeFace();
+}
+function toV(c){c.setTransform(cs.dpr*vs,0,0,cs.dpr*vs,cs.dpr*vox,cs.dpr*voy);}
+function label(c,t,x,y,col,al){c.fillStyle=col||COL.muted;c.font="700 12.5px Menlo,Consolas,monospace";c.textAlign=al||"center";c.fillText(t,x,y);}
+function drawStatic(){
+  staticLayer.width=cs.el.width;staticLayer.height=cs.el.height;const c=staticLayer.getContext("2d");
+  c.setTransform(1,0,0,1,0,0);c.fillStyle=COL.bg;c.fillRect(0,0,staticLayer.width,staticLayer.height);toV(c);
+  // floor grid
+  c.strokeStyle="#0f1626";c.lineWidth=1;for(let x=0;x<=VW;x+=40){c.beginPath();c.moveTo(x,0);c.lineTo(x,VH);c.stroke();}for(let y=0;y<=VH;y+=40){c.beginPath();c.moveTo(0,y);c.lineTo(VW,y);c.stroke();}
+  // pipes
+  c.lineCap="round";c.lineJoin="round";
+  for(let p=0;p<PIPES.length;p++){const a=PIPES[p].pts;c.beginPath();c.moveTo(a[0],a[1]);for(let i=2;i<a.length;i+=2)c.lineTo(a[i],a[i+1]);c.strokeStyle="#3a4666";c.lineWidth=9;c.stroke();c.strokeStyle="#0b101c";c.lineWidth=5.5;c.stroke();}
+  // O2 bottle
+  c.fillStyle=vgradX(c,30,80,"#1b3a4c","#3d7e9c");rr(c,30,340,50,150,20);c.fill();c.fillStyle="#2a5870";c.fillRect(48,328,14,14);
+  label(c,"O2",55,420,"#d8f4ff");label(c,"CYL",55,505);
+  // N2 bottle
+  c.fillStyle=vgradX(c,196,238,"#2c2347","#6b56a8");rr(c,196,40,42,110,16);c.fill();label(c,"N2",217,100,"#eadfff");label(c,"30 bar",217,165);
+  // regulator body
+  c.fillStyle=COL.metal;c.beginPath();c.arc(130,300,13,0,6.283);c.fill();c.fillStyle="#1a2234";c.beginPath();c.moveTo(121,300);c.lineTo(139,293);c.lineTo(139,307);c.closePath();c.fill();label(c,"PR1",130,330);
+  // filter
+  c.fillStyle="#1a2234";c.strokeStyle=COL.metal;c.lineWidth=2;rr(c,281,289,28,22,4);c.fill();c.stroke();c.beginPath();for(let i=0;i<4;i++){c.moveTo(286+i*6,291);c.lineTo(286+i*6,309);}c.lineWidth=1;c.stroke();label(c,"FL1 40µm",295,330);
+  // orifices
+  orifice(c,535,300);label(c,"FO",535,330);orifice(c,325,70);label(c,"RO2",325,96);
+  // check valves
+  ck(c,350,70);ck(c,378,70);label(c,"CK2A  CK2B",364,96);
+  // burst disc
+  c.strokeStyle=COL.metal;c.lineWidth=2;c.beginPath();c.moveTo(505,356);c.lineTo(525,356);c.moveTo(505,372);c.lineTo(525,372);c.stroke();label(c,"RD1 90",515,392);
+  label(c,"RV1 75",425,392);label(c,"PV1 VENT",470,436);label(c,"RV3 70",212,246,COL.muted,"left");label(c,"HV3",240,330);label(c,"MV1",355,330);label(c,"NV1",388,245);label(c,"PV3",285,96);label(c,"IP1",FACE-12,330);
+  label(c,"OXYGEN FEED",150,282,"#3f6f86","left");label(c,"NITROGEN PURGE",250,52,"#6a57a0","left");
+  // taps / leads
+  c.strokeStyle="#3a4666";c.lineWidth=2;c.beginPath();c.moveTo(90,300);c.lineTo(90,272);c.moveTo(450,300);c.lineTo(450,272);c.stroke();
+  const top=AX-(eng.chamberR+PARAMS.drawWall_mm)*kmm;
+  c.beginPath();c.moveTo(615,157);c.lineTo(615,top);c.moveTo(680,158);c.lineTo(FACE+14*kmm,top);c.stroke();
+  c.strokeStyle="#5a4a2a";c.setLineDash([3,3]);c.beginPath();c.moveTo(698,140);c.lineTo(732,140);c.stroke();c.setLineDash(NODASH);
+  label(c,"IGN",680,172);label(c,"ARM",750,172);
+  // thrust stand / ground
+  c.fillStyle="#141c2e";c.fillRect(FACE-40,AX+118,340,8);c.fillRect(FACE-34,AX-112,10,230);
+}
+function vgradX(c,x0,x1,a,b){const g=c.createLinearGradient(x0,0,x1,0);g.addColorStop(0,a);g.addColorStop(0.45,b);g.addColorStop(1,a);return g;}
+function orifice(c,x,y){c.strokeStyle=COL.amber;c.lineWidth=2.5;c.beginPath();c.moveTo(x,y-10);c.lineTo(x,y-3);c.moveTo(x,y+3);c.lineTo(x,y+10);c.stroke();}
+function ck(c,x,y){c.fillStyle=COL.metal;c.beginPath();c.moveTo(x-8,y-7);c.lineTo(x+6,y);c.lineTo(x-8,y+7);c.closePath();c.fill();c.strokeStyle=COL.metal;c.lineWidth=2;c.beginPath();c.moveTo(x+7,y-7);c.lineTo(x+7,y+7);c.stroke();}
+function valve(c,x,y,vert,open,act,live){ // bow-tie body + rotating handle; act: pneumatic actuator box
+  c.save();c.translate(x,y);if(vert)c.rotate(Math.PI/2);
+  c.fillStyle=live?"#1d4a3a":"#2a3146";c.strokeStyle=live?COL.green:COL.metal;c.lineWidth=1.5;
+  c.beginPath();c.moveTo(-12,-8);c.lineTo(0,0);c.lineTo(-12,8);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(12,-8);c.lineTo(0,0);c.lineTo(12,8);c.closePath();c.fill();c.stroke();
+  if(act){c.strokeStyle=COL.metal;c.beginPath();c.moveTo(0,0);c.lineTo(0,-16);c.stroke();c.fillStyle="#222b40";rr(c,-11,-32,22,16,3);c.fill();c.stroke();}
+  c.rotate((1-open)*Math.PI/2);c.strokeStyle=live?COL.green:COL.amber;c.lineWidth=3.5;c.lineCap="round";c.beginPath();c.moveTo(-13,0);c.lineTo(13,0);c.stroke();
+  c.restore();
+}
+function relief(c,x,y,lift){c.save();c.translate(x,y);c.fillStyle=lift>0?"#5a1a22":"#2a3146";c.strokeStyle=lift>0?COL.red:COL.metal;c.lineWidth=1.5;c.beginPath();c.moveTo(-8,10);c.lineTo(0,0);c.lineTo(8,10);c.closePath();c.fill();c.stroke();
+  c.beginPath();c.moveTo(0,0);c.lineTo(0,-10-lift*3);c.stroke();c.beginPath();for(let i=0;i<4;i++){c.moveTo(-5,-2-i*2.5);c.lineTo(5,-3.2-i*2.5);}c.stroke();c.restore();}
+function bubble(c,x,y,name,val,alarm){c.fillStyle="#0c1320";c.strokeStyle=alarm?COL.red:COL.cyan;c.lineWidth=1.5;c.beginPath();c.arc(x,y,16,0,6.283);c.fill();c.stroke();
+  c.fillStyle=COL.muted;c.font="600 8px Menlo,monospace";c.textAlign="center";c.fillText(name,x,y-4);c.fillStyle=alarm?COL.red:COL.text;c.font="700 10px Menlo,monospace";c.fillText(val,x,y+8);}
+
+/* particles: fixed pool, recycled */
+const NP=420,PT=[];for(let i=0;i<NP;i++)PT.push({on:false,x:0,y:0,vx:0,vy:0,life:0,max:1,size:2,kind:0,rot:0});let pIdx=0;
+function spawn(kind,x,y,vx,vy,life,size){const p=PT[pIdx];pIdx=(pIdx+1)%NP;p.on=true;p.kind=kind;p.x=x;p.y=y;p.vx=vx;p.vy=vy;p.life=life;p.max=life;p.size=size;p.rot=Math.random()*6.28;}
+function updParticles(dt){for(let i=0;i<NP;i++){const p=PT[i];if(!p.on)continue;p.life-=dt;if(p.life<=0){p.on=false;continue;}
+  if(p.kind===2){p.vy+=420*dt;p.rot+=dt*8;} else if(p.kind===1){p.vy-=18*dt;p.vx*=1-0.8*dt;p.size+=14*dt;} else {p.vx*=1-0.5*dt;}
+  p.x+=p.vx*dt;p.y+=p.vy*dt;}}
+function drawParticles(c){
+  for(let i=0;i<NP;i++){const p=PT[i];if(!p.on||p.kind!==1)continue;const a=p.life/p.max;c.fillStyle="rgba(120,125,135,"+(0.32*a).toFixed(3)+")";c.beginPath();c.arc(p.x,p.y,p.size,0,6.283);c.fill();}
+  c.globalCompositeOperation="lighter";
+  for(let i=0;i<NP;i++){const p=PT[i];if(!p.on||(p.kind!==0&&p.kind!==3))continue;const a=p.life/p.max;c.fillStyle=p.kind===3?"rgba(95,211,255,"+(0.35*a).toFixed(3)+")":"rgba(255,"+Math.round(120+100*a)+",40,"+(0.7*a).toFixed(3)+")";c.beginPath();c.arc(p.x,p.y,p.size*(0.4+a),0,6.283);c.fill();}
+  c.globalCompositeOperation="source-over";
+  for(let i=0;i<NP;i++){const p=PT[i];if(!p.on||p.kind!==2)continue;c.save();c.translate(p.x,p.y);c.rotate(p.rot);c.fillStyle="#9aa6bf";c.fillRect(-p.size,-p.size*0.5,p.size*2,p.size);c.restore();}
+}
+const EXPLOSIVE={HARD_START:1,ADIABATIC:1,BURST:1,BURN_THROUGH:1,FLASHBACK:1};
+function exitX(){return FACE+eng.profile[eng.profile.length-1][0]*kmm;}
+function startEnding(){
+  const code=S.ending.code;endT=0;reportShown=false;
+  audioOneShot(EXPLOSIVE[code]?'explosion':code==="NO_LIGHT"?'misfire':code==="CLEAN_RUN"?'valve':'klaxon');
+  let x=FACE+eng.chamberL*0.5*kmm,y=AX;
+  if(code==="ADIABATIC"){x=440;y=300;} else if(code==="FLASHBACK"){x=FACE-10;y=300;} else if(code==="BURN_THROUGH"){y=AX-eng.chamberR*kmm;}
+  anim.ex=x;anim.ey=y;
+  if(EXPLOSIVE[code]){anim.shake=14;FXE.groundY=AX+150;FXE.scale=1;fxExplosionStart(FXE,x,y);
+    for(let i=0;i<70;i++){const a=Math.random()*6.283,v=120+Math.random()*420;spawn(2,x,y,Math.cos(a)*v,Math.sin(a)*v-120,1.6+Math.random()*1.2,2+Math.random()*4);}
+    for(let i=0;i<110;i++){const a=Math.random()*6.283,v=40+Math.random()*300;spawn(0,x,y,Math.cos(a)*v,Math.sin(a)*v,0.5+Math.random()*0.9,5+Math.random()*9);}
+    for(let i=0;i<60;i++){const a=Math.random()*6.283,v=10+Math.random()*60;spawn(1,x+Math.cos(a)*20,y+Math.sin(a)*20,Math.cos(a)*v,Math.sin(a)*v-20,2.5+Math.random()*2,8+Math.random()*14);}
+  } else if(code==="NO_LIGHT"){for(let i=0;i<26;i++)spawn(1,exitX()+Math.random()*10,AX+(Math.random()-0.5)*10,20+Math.random()*30,-6-Math.random()*10,2.5+Math.random()*1.5,4+Math.random()*5);fxMisfireStart(FXM,exitX(),AX);}
+  else if(code==="CHUG"){anim.shake=10;}
+  $("lamp").className=code==="CLEAN_RUN"||code==="POWER_CUT"||code==="REG_FAIL"?"SAFE":"INCIDENT";$("lamp").textContent=code==="CLEAN_RUN"?"CLEAN RUN":"INCIDENT";
+}
+function showReport(){
+  reportShown=true;const e=S.ending,inc=INCIDENTS[e.code]||{title:e.code,happened:"–",number:"–",prevent:"–"};
+  const sub=t=>String(t).replace(/\{(\w+)\}/g,(m,k)=>(e.data&&e.data[k]!==undefined)?e.data[k]:"–");
+  $("rCode").textContent="INCIDENT REPORT · "+e.code+" · t = "+fmt(S.t,2)+" s · "+eng.label;
+  $("rTitle").textContent=inc.title;$("rHap").textContent=sub(inc.happened);$("rNum").textContent=sub(inc.number);$("rPrev").textContent=sub(inc.prevent);
+  const good=e.code==="CLEAN_RUN"||e.code==="POWER_CUT"||e.code==="REG_FAIL";
+  $("report").className="show"+(good?" good":"");if(!good)$("stand").classList.add("dead");
+}
+
+/* engine cutaway, drawn in millimetres from the profile */
+function pathInner(c,sign){const pr=eng.profile;for(let i=0;i<pr.length;i++){const x=FACE+pr[i][0]*kmm,y=AX+sign*pr[i][1]*kmm;if(i===0&&sign<0)c.moveTo(x,y);else c.lineTo(x,y);}}
+function drawEngine(c,tNow){
+  const pr=eng.profile,w=PARAMS.drawWall_mm*kmm,n=pr.length,lit=S.lit,pcb=(S.Pc-PARAMS.Pa)/1e5;
+  // interior gas
+  c.beginPath();for(let i=0;i<n;i++){const x=FACE+pr[i][0]*kmm,y=AX-pr[i][1]*kmm;if(i===0)c.moveTo(x,y);else c.lineTo(x,y);}for(let i=n-1;i>=0;i--)c.lineTo(FACE+pr[i][0]*kmm,AX+pr[i][1]*kmm);c.closePath();
+  c.fillStyle="#05070d";c.fill();
+  if(lit){const g=c.createLinearGradient(FACE,0,exitX(),0),a=clamp(0.45+pcb/20,0,1),fl=0.9+0.1*Math.sin(tNow*37);
+    g.addColorStop(0,"rgba(255,150,40,"+(a*0.55*fl).toFixed(3)+")");g.addColorStop(0.55,"rgba(255,215,120,"+(a*fl).toFixed(3)+")");g.addColorStop(1,"rgba(255,245,215,"+a.toFixed(3)+")");c.fillStyle=g;c.fill();}
+  else if(pcb>0.02||S.ignT>0){const a=clamp(pcb/3,0.05,0.5);c.fillStyle=S.xO>0.5?"rgba(95,211,255,"+a.toFixed(3)+")":"rgba(181,140,255,"+a.toFixed(3)+")";c.fill();}
+  else if(S.hot>500){c.fillStyle="rgba(255,90,30,"+clamp((S.hot-500)/6000,0,0.35).toFixed(3)+")";c.fill();}
+  // grain
+  const g=eng.grain;
+  if(g){const x0=FACE+g.x0*kmm,L=g.length*kmm,ro=g.outerR*kmm,ri=Math.min(S.r*1000,g.outerR)*kmm;
+    c.fillStyle=vgrad(c,AX-ro,AX-ri,"#cfc49a","#e8dfb8");c.fillRect(x0,AX-ro,L,ro-ri);c.fillRect(x0,AX+ri,L,ro-ri);
+    if(lit){c.fillStyle="rgba(255,120,20,0.85)";c.fillRect(x0,AX-ri-2,L,2.5);c.fillRect(x0,AX+ri-0.5,L,2.5);}
+    // original port outline
+    c.strokeStyle="rgba(139,152,178,0.5)";c.setLineDash([3,3]);c.lineWidth=1;c.beginPath();c.moveTo(x0,AX-g.portR*kmm);c.lineTo(x0+L,AX-g.portR*kmm);c.moveTo(x0,AX+g.portR*kmm);c.lineTo(x0+L,AX+g.portR*kmm);c.stroke();c.setLineDash(NODASH);}
+  // casing, both halves
+  for(let sgn=-1;sgn<=1;sgn+=2){c.beginPath();for(let i=0;i<n;i++){const x=FACE+pr[i][0]*kmm,y=AX+sgn*(pr[i][1]*kmm+w);if(i===0)c.moveTo(x,y);else c.lineTo(x,y);}
+    for(let i=n-1;i>=0;i--)c.lineTo(FACE+pr[i][0]*kmm,AX+sgn*pr[i][1]*kmm);c.closePath();
+    c.fillStyle=lit?"#6a6470":"#5b667f";c.fill();c.strokeStyle="#9aa6bf";c.lineWidth=1;c.stroke();}
+  // injector head
+  const hr=(eng.chamberR+PARAMS.drawWall_mm+6)*kmm;c.fillStyle=vgrad(c,AX-hr,AX+hr,"#3a4560","#8793ad");rr(c,FACE-22*kmm*0.7,AX-hr,22*kmm*0.7,2*hr,3);c.fill();
+  c.fillStyle="#05070d";for(let i=-2;i<=2;i++)c.fillRect(FACE-5,AX+i*eng.chamberR*kmm*0.3-1,5,2);
+  // igniter glow
+  if(S.ignT>0){const ix=FACE+14*kmm,iy=AX-eng.chamberR*kmm*0.8;c.globalCompositeOperation="lighter";const gg=c.createRadialGradient(ix,iy,0,ix,iy,22);gg.addColorStop(0,"rgba(255,240,200,0.95)");gg.addColorStop(1,"rgba(255,120,20,0)");c.fillStyle=gg;c.beginPath();c.arc(ix,iy,22,0,6.283);c.fill();c.globalCompositeOperation="source-over";}
+  // dimensions
+  c.fillStyle=COL.muted;c.font="9px Menlo,monospace";c.textAlign="left";
+  c.fillText("throat Ø"+fmt(eng.throatR*2,2)+"  exit Ø"+fmt(eng.exitR*2,2)+"  ε "+fmt(S.eps,2)+"  mm",FACE,AX+hr+22);
+}
+function drawPlume(c,tNow){
+  const g=S.lit?S.gam:1.4; nozzle(S.Pc,g,S.eps,S.At);
+  if(!(NOZ.F>0.5)&&!(S.qInj>0.003))return;
+  const ex=exitX(),Rt=eng.throatR*kmm;
+  if(!S.lit){ // cold gas jet
+    const a=clamp(S.qInj*2.5,0,0.3),Re=eng.exitR*kmm;const gr=c.createLinearGradient(ex,0,ex+160,0);gr.addColorStop(0,(S.xO>0.5?"rgba(95,211,255,":"rgba(181,140,255,")+a.toFixed(3)+")");gr.addColorStop(1,"rgba(95,211,255,0)");
+    c.fillStyle=gr;c.beginPath();c.moveTo(ex,AX-Re);c.lineTo(ex+160,AX-Re-30);c.lineTo(ex+160,AX+Re+30);c.lineTo(ex,AX+Re);c.closePath();c.fill();return;}
+  let x0=ex,R0=eng.exitR*kmm;
+  if(NOZ.sep){ // jet detaches from the wall where the area ratio equals the separated value
+    const pr=eng.profile;let it=0,rm=1e9;for(let i=0;i<pr.length;i++)if(pr[i][1]<rm){rm=pr[i][1];it=i;}
+    const rs=eng.throatR*Math.sqrt(NOZ.epsUsed);for(let i=it;i<pr.length;i++){if(pr[i][1]>=rs||i===pr.length-1){x0=FACE+pr[i][0]*kmm;R0=Math.min(rs,pr[i][1])*kmm;break;}}}
+  const Rj=Rt*Math.sqrt(NOZ.epsJ);                         // fully expanded jet radius (isentropic)
+  const Lc=Math.max(14,1.306*2*Rj*Math.sqrt(Math.max(0.05,NOZ.Mj*NOZ.Mj-1)));  // Prandtl-Pack shock-cell length
+  const Lp=Math.min(VW-x0+30,(80+11*Math.sqrt(NOZ.F))*(0.96+0.04*Math.sin(tNow*41)));
+  const N=44;c.globalCompositeOperation="lighter";
+  for(let pass=0;pass<2;pass++){const k=pass?0.5:1;
+    c.beginPath();c.moveTo(x0,AX-R0*k);
+    for(let i=1;i<=N;i++){const x=Lp*i/N,r=(Rj+(R0-Rj)*Math.cos(6.283*x/Lc)*Math.exp(-x/(2.5*Lc))+x*0.07)*k*(1-0.5*i/N);c.lineTo(x0+x,AX-r);}
+    for(let i=N;i>=1;i--){const x=Lp*i/N,r=(Rj+(R0-Rj)*Math.cos(6.283*x/Lc)*Math.exp(-x/(2.5*Lc))+x*0.07)*k*(1-0.5*i/N);c.lineTo(x0+x,AX+r);}
+    c.lineTo(x0,AX+R0*k);c.closePath();
+    const gr=c.createLinearGradient(x0,0,x0+Lp,0);
+    if(pass){gr.addColorStop(0,"rgba(255,250,230,0.95)");gr.addColorStop(0.5,"rgba(255,210,120,0.5)");gr.addColorStop(1,"rgba(255,160,60,0)");}
+    else{gr.addColorStop(0,"rgba(255,170,60,0.75)");gr.addColorStop(0.45,"rgba(255,110,30,0.45)");gr.addColorStop(1,"rgba(200,60,20,0)");}
+    c.fillStyle=gr;c.fill();}
+  // shock diamonds at the pinch points
+  const over=R0>Rj;for(let kx=0;kx<7;kx++){const x=(over?kx+0.5:kx+1)*Lc;if(x>Lp*0.85)break;const a=0.9*Math.exp(-kx*0.45),rd=Math.max(4,Math.min(R0,Rj)*0.8);
+    const gd=c.createRadialGradient(x0+x,AX,0,x0+x,AX,rd*1.6);gd.addColorStop(0,"rgba(255,255,255,"+a.toFixed(3)+")");gd.addColorStop(0.4,"rgba(255,220,140,"+(a*0.6).toFixed(3)+")");gd.addColorStop(1,"rgba(255,160,60,0)");
+    c.fillStyle=gd;c.beginPath();c.moveTo(x0+x-rd*1.6,AX);c.lineTo(x0+x,AX-rd);c.lineTo(x0+x+rd*1.6,AX);c.lineTo(x0+x,AX+rd);c.closePath();c.fill();}
+  c.globalCompositeOperation="source-over";
+  c.font="600 10px Menlo,monospace";c.textAlign="left";
+  const st=NOZ.sep?"FLOW SEPARATION in nozzle":(NOZ.Pe<PARAMS.Pa*0.95?"OVER-EXPANDED · plume pinches":NOZ.Pe>PARAMS.Pa*1.05?"UNDER-EXPANDED · plume balloons":"MATCHED");
+  c.fillStyle=NOZ.sep?COL.red:COL.amber;c.fillText(st,ex+10,AX-120);c.fillStyle=COL.muted;c.fillText("Me "+fmt(NOZ.Me,2)+" · Pe/Pa "+fmt(NOZ.Pe/PARAMS.Pa,2)+" · cell "+fmt(Lc/kmm,0)+" mm",ex+10,AX-106);
+  // sparks
+  if(Math.random()<0.6)spawn(0,x0+Lp*0.3*Math.random(),AX+(Math.random()-0.5)*R0,260+Math.random()*200,(Math.random()-0.5)*50,0.35,2+Math.random()*2);
+}
+function drawStand(dt,tNow){
+  const c=cs.ctx;c.setTransform(1,0,0,1,0,0);c.drawImage(staticLayer,0,0);toV(c);
+  if(anim.shake>0.05||S.lit){const amp=anim.shake+(S.lit?clamp(S.F/180,0,2.2)+S.chugAmp*5:0);c.translate((Math.random()-0.5)*amp,(Math.random()-0.5)*amp);}
+  // pipes: pressure tint + moving dashes coloured by fluid
+  c.lineCap="butt";c.lineJoin="round";
+  for(let p=0;p<PIPES.length;p++){const P=PIPES[p],a=P.pts,q=P.q(),pr=P.P(),col=P.col();
+    if(pr>1.3e5||q>1e-4){c.beginPath();c.moveTo(a[0],a[1]);for(let i=2;i<a.length;i+=2)c.lineTo(a[i],a[i+1]);
+      c.globalAlpha=clamp(0.18+pr/60e5*0.5,0.18,0.7);c.strokeStyle=col;c.lineWidth=5;c.setLineDash(NODASH);c.stroke();
+      if(q>1e-4){P.off-=(25+260*Math.sqrt(Math.min(q,0.6)/0.1))*dt*(S.frozen?0:timeScale<1?Math.max(timeScale,0.15):1);c.globalAlpha=1;c.setLineDash(DASH);c.lineDashOffset=P.off;c.strokeStyle="#ffffff";c.lineWidth=2.2;c.stroke();c.strokeStyle=col;c.lineWidth=3.5;c.globalAlpha=0.55;c.stroke();}
+      c.globalAlpha=1;c.setLineDash(NODASH);}}
+  // valves
+  anim.hv3=lerp(anim.hv3,C.hv3?1:0,clamp(dt*10,0,1));anim.pv3=lerp(anim.pv3,C.purge?1:0,clamp(dt*14,0,1));anim.pv1=lerp(anim.pv1,C.vent?1:0,clamp(dt*14,0,1));anim.arm=lerp(anim.arm,C.arm?1:0,clamp(dt*10,0,1));
+  valve(c,240,300,false,anim.hv3,false,C.hv3);valve(c,355,300,false,S.mvOpen,true,S.mvOpen>0.02);valve(c,285,70,false,anim.pv3,true,C.purge);valve(c,470,364,true,anim.pv1,false,C.vent);
+  c.fillStyle="#222b40";c.strokeStyle=COL.metal;c.lineWidth=1.2;c.beginPath();c.moveTo(381,262);c.lineTo(395,255);c.lineTo(395,269);c.closePath();c.fill();c.stroke();c.beginPath();c.moveTo(366,276);c.lineTo(381,262);c.stroke();
+  relief(c,185,252,S.rv3Lift);relief(c,425,362,S.rv1Lift);
+  c.strokeStyle=S.rd1Burst?COL.red:COL.amber;c.lineWidth=2;c.beginPath();if(S.rd1Burst){c.moveTo(506,364);c.lineTo(512,360);c.moveTo(518,368);c.lineTo(524,364);}else{c.moveTo(506,364);c.quadraticCurveTo(515,356,524,364);}c.stroke();
+  // relief / vent jets
+  if(S.qRv3>0.005&&Math.random()<0.8)spawn(3,185,212,(Math.random()-0.5)*40,-120-Math.random()*80,0.5,4+Math.random()*4);
+  if(S.qVent>0.003&&Math.random()<0.6)spawn(3,470,424,(Math.random()-0.5)*30,60+Math.random()*60,0.45,3+Math.random()*3);
+  // orifice plate IP1
+  c.strokeStyle=C.injIdx===0?COL.amber:COL.red;c.lineWidth=3;c.beginPath();const gap=C.injIdx===0?3:7;c.moveTo(FACE-12,288);c.lineTo(FACE-12,300-gap);c.moveTo(FACE-12,300+gap);c.lineTo(FACE-12,312);c.stroke();
+  // gauges as bubbles
+  bubble(c,90,255,"PT2",fmt(S.Pb/1e5,0),S.Pb<30e5);bubble(c,450,255,"PT3",fmt(S.Pf/1e5,1),S.Pf>PARAMS.rv1Set);bubble(c,615,140,"PT4",fmt(S.Pc/1e5,1),S.Pc>eng.burstPc_bar*0.8e5);
+  // igniter box + ARM key
+  c.fillStyle=S.ignT>0?"#5a2a08":"#1a2234";c.strokeStyle=S.ignT>0?COL.flame:(S.ignUsed?COL.muted:COL.amber);c.lineWidth=1.5;rr(c,662,124,36,32,5);c.fill();c.stroke();
+  c.fillStyle=S.ignT>0?COL.amber:COL.muted;c.font="700 9px Menlo,monospace";c.textAlign="center";c.fillText(S.ignT>0?fmt(S.ignT,1)+"s":S.ignUsed?"SPENT":"PYRO",680,144);
+  c.fillStyle="#1a2234";c.strokeStyle=C.arm?COL.green:COL.metal;c.beginPath();c.arc(750,140,16,0,6.283);c.fill();c.stroke();
+  c.save();c.translate(750,140);c.rotate(anim.arm*Math.PI/2);c.fillStyle=C.arm?COL.green:COL.muted;c.fillRect(-2.5,-12,5,24);c.restore();
+  // engine + plume
+  drawPlume(c,tNow);drawEngine(c,tNow);
+  if(S.lit)drawHeatHaze(c,{x:exitX(),y:AX-150,w:Math.min(330,VW-exitX()),h:130,intensity01:clamp(NOZ.F/400,0,1),t:tNow});
+  if(S.lit&&Math.random()<0.25)spawn(1,exitX()+200+Math.random()*120,AX+(Math.random()-0.5)*40,60+Math.random()*60,-10-Math.random()*20,2.2,6+Math.random()*6);
+  // scorch + explosion overlays
+  if(anim.scorch>0){const gs=c.createRadialGradient(anim.ex,anim.ey,4,anim.ex,anim.ey,90);gs.addColorStop(0,"rgba(0,0,0,0.9)");gs.addColorStop(1,"rgba(0,0,0,0)");c.fillStyle=gs;c.beginPath();c.arc(anim.ex,anim.ey,90,0,6.283);c.fill();}
+  drawParticles(c);
+  fxExplosionDraw(c,FXE,dt);toV(c);fxMisfireDraw(c,FXM,dt);
+  if(anim.shock>0){const r=anim.shock*520;c.strokeStyle="rgba(255,240,210,"+clamp(1-anim.shock,0,1).toFixed(3)+")";c.lineWidth=5*(1-anim.shock)+1;c.beginPath();c.arc(anim.ex,anim.ey,r,0,6.283);c.stroke();}
+  if(anim.flash>0.01){c.setTransform(1,0,0,1,0,0);c.fillStyle="rgba(255,250,235,"+anim.flash.toFixed(3)+")";c.fillRect(0,0,cs.el.width,cs.el.height);}
+}
+
+/* ---- 7-8 Live plots (ring buffers) ---- */
+function drawPlots(){
+  const c=cp.ctx,w=cp.w,h=cp.h,R=S.ring;c.setTransform(cp.dpr,0,0,cp.dpr,0,0);c.fillStyle="#0c111c";c.fillRect(0,0,w,h);
+  const rows=[[R.pc,1e-5,Math.max(16,eng.burstPc_bar*0.5),"Pc bar",COL.flame],[R.f,1,400,"THRUST N",COL.green],[R.pb,1e-5,200,"BOTTLE bar",COL.cyan]];
+  const span=NRING*PARAMS.sampleDT,tEnd=S.t,ph=h/3;
+  for(let k=0;k<3;k++){const y0=k*ph,row=rows[k],arr=row[0];
+    c.strokeStyle=COL.line;c.lineWidth=1;c.beginPath();c.moveTo(0,y0+ph-0.5);c.lineTo(w,y0+ph-0.5);c.stroke();
+    let mx=row[2];for(let j=0;j<R.n;j++){const v=arr[j]*row[1];if(v>mx)mx=v;}
+    c.strokeStyle=row[4];c.lineWidth=1.6;c.beginPath();
+    for(let j=0;j<R.n;j++){const idx=(R.i-R.n+j+NRING)%NRING,x=w-(tEnd-R.t[idx])/span*w,y=y0+ph-4-(arr[idx]*row[1])/mx*(ph-18);if(j===0)c.moveTo(x,y);else c.lineTo(x,y);}
+    c.stroke();
+    c.fillStyle=row[4];c.font="600 10px Menlo,monospace";c.textAlign="left";c.fillText(row[3],6,y0+12);
+    c.fillStyle=COL.muted;c.textAlign="right";c.fillText("max "+fmt(mx,0)+" · now "+fmt(R.n?arr[(R.i-1+NRING)%NRING]*row[1]:NaN,1),w-6,y0+12);}
+  c.fillStyle=COL.muted;c.textAlign="right";c.fillText(fmt(span,0)+" s window",w-6,h-4);
+}
+
+/* ---- 9 Gauges and readouts ---- */
+const GA=[{n:"PT2 BOTTLE",max:200,red:()=>190,v:()=>S.Pb},{n:"PT3 LINE",max:100,red:()=>PARAMS.rv1Set/1e5,v:()=>S.Pf},{n:"PT4 CHAMBER",max:50,red:()=>eng.burstPc_bar,v:()=>S.Pc}];
+function gxy(i){const w=cg.w/3;return [w*(i+0.5),cg.h*0.56,Math.min(w*0.42,cg.h*0.42)];}
+function drawGaugeFace(){gaugeFace.width=cg.el.width;gaugeFace.height=cg.el.height;const c=gaugeFace.getContext("2d");c.setTransform(cg.dpr,0,0,cg.dpr,0,0);c.fillStyle="#0c111c";c.fillRect(0,0,cg.w,cg.h);
+  for(let i=0;i<3;i++){const g=GA[i],p=gxy(i),x=p[0],y=p[1],r=p[2],a0=Math.PI*0.75,a1=Math.PI*2.25;
+    c.lineWidth=5;c.strokeStyle="#26314a";c.beginPath();c.arc(x,y,r,a0,a1);c.stroke();
+    const ar=a0+(a1-a0)*clamp(g.red()/g.max,0,1);c.strokeStyle=COL.red;c.beginPath();c.arc(x,y,r,ar,a1);c.stroke();
+    c.strokeStyle=COL.muted;c.lineWidth=1.5;for(let k=0;k<=10;k++){const a=a0+(a1-a0)*k/10;c.beginPath();c.moveTo(x+Math.cos(a)*(r-9),y+Math.sin(a)*(r-9));c.lineTo(x+Math.cos(a)*(r-3),y+Math.sin(a)*(r-3));c.stroke();}
+    c.fillStyle=COL.muted;c.font="600 9px Menlo,monospace";c.textAlign="center";c.fillText(g.n,x,y-r-6>8?y-r-6:10);c.fillText("0",x-r*0.6,y+r*0.95);c.fillText(String(g.max),x+r*0.6,y+r*0.95);}}
+function drawGauges(dt){const c=cg.ctx;c.setTransform(1,0,0,1,0,0);c.drawImage(gaugeFace,0,0);c.setTransform(cg.dpr,0,0,cg.dpr,0,0);
+  for(let i=0;i<3;i++){const g=GA[i],p=gxy(i),x=p[0],y=p[1],r=p[2],tgt=clamp(g.v()/1e5/g.max,0,1.03);
+    anim.needleV[i]+=((tgt-anim.needle[i])*180-anim.needleV[i]*16)*dt;anim.needle[i]+=anim.needleV[i]*dt; // needle with inertia
+    const a=Math.PI*0.75+Math.PI*1.5*anim.needle[i],over=g.v()/1e5>g.red();
+    c.strokeStyle=over?COL.red:COL.amber;c.lineWidth=2.5;c.lineCap="round";c.beginPath();c.moveTo(x-Math.cos(a)*8,y-Math.sin(a)*8);c.lineTo(x+Math.cos(a)*(r-12),y+Math.sin(a)*(r-12));c.stroke();
+    c.fillStyle=COL.metal;c.beginPath();c.arc(x,y,4,0,6.283);c.fill();
+    c.fillStyle=over?COL.red:COL.text;c.font="700 15px Menlo,monospace";c.textAlign="center";c.fillText(fmt(g.v()/1e5,1),x,y+r*0.62);}}
+const OUT={};["oF","oOF","oIsp","oCs","oTc","oMe","oPe","oSt","oPort","oSlug","oOx","oT","oFu","oRd","oG","oWeb","oCF","oImp","oBt","oPk","tCs","tG","tT","tOF","v0a","v0b","v0e","v1a","v1b","v1e","v2a","v2b","v2e","fps","note","hint","lamp","fault"].forEach(k=>OUT[k]=$(k));
+const last={};function setT(k,v){if(last[k]!==v){last[k]=v;OUT[k].textContent=v;}}
+const VR=new Float64Array(6);
+function updReadouts(){
+  const lit=S.lit,mdot=S.oxD+S.qFuel;
+  setT("oF",fmt(S.F,0));setT("oOF",lit?fmt(S.OF,2):"–");setT("oIsp",lit&&mdot>0?fmt(S.F/(mdot*PARAMS.g0),0):"–");setT("oCs",lit?fmt(S.cs,0):"–");setT("oTc",lit?fmt(S.Tc,0):"–");
+  setT("oMe",NOZ.F>0.5?fmt(NOZ.Me,2):"–");setT("oPe",NOZ.F>0.5?fmt(NOZ.Pe/PARAMS.Pa,2):"–");setT("oSt",lit?fmt(S.stiff*100,1):"–");
+  setT("oPort",eng.grain?fmt(S.r*2000,1):"–");setT("oSlug",fmt(S.Tslug-273.15,0)+" / "+fmt(S.TslugPk-273.15,0));setT("oOx",fmt(S.oxD*1000,1));setT("oT",fmt(S.t,2));
+  {const g=eng.grain,hy=!!g,Gx=hy&&S.r>0?S.oxD/(Math.PI*S.r*S.r):NaN,rd=hy&&Gx>0?PARAMS.a*Math.pow(Gx,PARAMS.n):NaN;
+   setT("oFu",lit?fmt(S.qFuel*1000,1):"–");setT("oRd",lit&&hy?fmt(rd*1000,2):"–");setT("oG",hy&&S.oxD>1e-5?fmt(Gx,0):"–");
+   setT("oWeb",hy?fmt(g.outerR-S.r*1000,1):"–");setT("oCF",NOZ.F>0.5?fmt(NOZ.CF,3):"–");setT("oImp",S.impulse>0?fmt(S.impulse,0):"–");
+   setT("oBt",S.burnT>0?fmt(S.burnT,1):"–");setT("oPk",fmt(S.pcPeak/1e5,1));
+   if(OUT.oWeb)OUT.oWeb.className=hy&&(g.outerR-S.r*1000)<6?"bad":"";}
+  OUT.oSt.className=lit&&S.stiff<PARAMS.chugStiff?"bad":"";OUT.oSlug.className=S.TslugPk>PARAMS.autoIgnT-120?"bad":"";
+  setT("tCs",lit?fmt(S.cs/PARAMS.etaCstar,0)+" m/s × η "+PARAMS.etaCstar:"–");setT("tG",lit?fmt(S.gam,3):"–");setT("tT",lit?fmt(S.Tc,0)+" K":"–");setT("tOF",lit?fmt(S.OF,2):"–");
+  verifyRows(VR);const minv=[0.1,1,20],ok=[!!eng.grain,!!eng.grain,true];
+  for(let i=0;i<3;i++){const a=VR[2*i],b=VR[2*i+1],live=ok[i]&&a>minv[i];
+    setT("v"+i+"a",live?fmt(a,3):"–");setT("v"+i+"b",live?fmt(b,3):"–");
+    if(live){const e=Math.abs(a-b)/Math.abs(b)*100;setT("v"+i+"e",fmt(e,3)+(e<=1?" ✓":" ✗"));OUT["v"+i+"e"].className=e<=1?"ok":"bad";}else{setT("v"+i+"e",ok[i]?"measuring":"n/a");OUT["v"+i+"e"].className="na";}}
+  if(!S.ending){const st=S.lit?"FIRING":(C.arm?"ARMED":"SAFE");if(OUT.lamp.className!==st){OUT.lamp.className=st;OUT.lamp.textContent=st;}}
+  if(S.fault){OUT.fault.style.display="block";setT("fault",S.fault);}
+}
+
+/* ---- 10 Controls ---- */
+const B={hv3:$("bHV3"),arm:$("bARM"),ign:$("bIGN"),mv:$("bMV"),pv3:$("bPV3"),pv1:$("bPV1"),reg:$("bRegFail"),pwr:$("bPwr"),snd:$("bSnd")};
+function setCls(el,cls,on){if(el.classList.contains(cls)!==on)el.classList.toggle(cls,on);}
+function syncButtons(){setCls(B.hv3,"on",C.hv3);setCls(B.arm,"hot",C.arm);setCls(B.ign,"hot",S.ignT>0);setCls(B.mv,"on",C.mvCmd);setCls(B.pv3,"on",C.purge);setCls(B.pv1,"on",C.vent);setCls(B.reg,"hot",C.regFailed);setCls(B.pwr,"hot",!C.power);
+  const t1=C.vent?"VENT OPEN":"VENT CLOSED";if(B.pv1.textContent!==t1)B.pv1.textContent=t1;const t2=C.purge?"PURGE ON":"PURGE OFF";if(B.pv3.textContent!==t2)B.pv3.textContent=t2;
+  const t3=C.arm?"ARM KEY IN":"ARM KEY OUT";if(B.arm.textContent!==t3)B.arm.textContent=t3;const t4=C.mvCmd?"MAIN VALVE OPEN":"MAIN VALVE SHUT";if(B.mv.textContent!==t4)B.mv.textContent=t4;
+  const t5=C.hv3?"HV3 OPEN":"HV3 SHUT";if(B.hv3.textContent!==t5)B.hv3.textContent=t5;}
+function live(){return !S.frozen&&C.power;}
+const ACT={
+  HV3:()=>{if(!S.frozen){C.hv3=!C.hv3;audioOneShot('valve');}},   // manual valve: works without power
+  MV1:()=>{if(live()){setMv(!C.mvCmd);audioOneShot('valve');}},
+  PV3:()=>{if(live()){C.purge=!C.purge;audioOneShot('valve');}},
+  PV1:()=>{if(live()){C.vent=!C.vent;audioOneShot('valve');}},
+  ARM:()=>{if(!S.frozen){C.arm=!C.arm;if(C.arm)C.keyWasIn=true;}},
+  IGN:()=>{if(!live())return;if(!C.arm){hint("Igniter circuit is open: ARM key is not in.");return;}if(S.ignUsed){hint("Igniter already spent.");return;}audioOneShot('igniter');S.ignT=PARAMS.ignDur;S.ignUsed=true;},
+  ABORT:()=>{if(S.frozen)return;audioOneShot('klaxon');C.mvCmd=false;C.vent=true;C.purge=true;S.ignT=0;C.aborted=true;hint("ABORT: main valve shut, vent open, purge open.");}
+};
+function setMv(on){if(on&&!C.mvCmd)S.pfAtOpen=S.Pf;C.mvCmd=on;}
+function hint(m){hintMsg=m;setT("hint",m);}
+const STEPS=[
+ ["OPEN HV3",()=>{C.hv3=true;},"Manual isolation valve open. Next: nitrogen purge."],
+ ["PURGE ON",()=>{C.purge=true;},"Sweeping the line with N2. Give it a few seconds, then close the purge."],
+ ["PURGE OFF",()=>{C.purge=false;},"Purge closed. Next: close the vent (it is held closed by power)."],
+ ["CLOSE VENT",()=>{C.vent=false;},"Vent closed. Read the gauges before the poll."],
+ ["GO / NO-GO",()=>{poll();},""],
+ ["ARM KEY",()=>{C.arm=true;C.keyWasIn=true;},"Igniter circuit live. Next: igniter. Fire first, oxygen second."],
+ ["IGNITER",()=>{ACT.IGN();},"Igniter burning for "+PARAMS.ignDur+" s. Watch PT4 for its small pressure signature."],
+ ["Pc CONFIRMS",()=>{hint("PT4 reads "+fmt((S.Pc-PARAMS.Pa)/1e5*1000,0)+" mbar above ambient: igniter confirmed on chamber pressure. Open the main valve now.");},""],
+ ["MAIN VALVE RAMP",()=>{setMv(true);},"Main valve ramping. Burn is a design number: shut down before the grain burns through."],
+ ["SHUTDOWN",()=>{setMv(false);},"Main valve shut. Purge NOW: the chamber is hot and the manifold is full of oxygen."],
+ ["PURGE ON",()=>{C.purge=true;},"Purging: flame out, cooling, sweeping leftover oxygen. Hold at least "+PARAMS.purgeMin+" s (30 s on the real stand)."],
+ ["VENT OPEN",()=>{C.vent=true;},"Line venting to zero. Then purge off and key out."],
+ ["PURGE OFF · KEY OUT",()=>{C.purge=false;C.arm=false;},"Key in pocket."]
+];
+function poll(){C.goPolled=true;const no=[];if(S.Pb<50e5)no.push("bottle < 50 bar");if(Math.abs(S.Pu-C.regSet)>0.1*C.regSet)no.push("regulator outlet off set-point");if(!C.hv3)no.push("HV3 shut");if(C.vent)no.push("vent open");if(C.purge)no.push("purge still on");
+  hint(no.length?"NO-GO: "+no.join(" · ")+". (Nothing stops you. Consequences are yours.)":"ALL GO — bottle "+fmt(S.Pb/1e5,0)+" bar, regulator "+fmt(S.Pu/1e5,1)+" bar, line "+fmt(S.Pf/1e5,1)+" bar.");}
+const seqEl=$("seq"),stepEls=[];
+(function(){const l=document.createElement("span");l.className="st";l.textContent="SPACE = next step ▸";l.style.border="0";seqEl.appendChild(l);
+  STEPS.forEach((s,i)=>{const e=document.createElement("span");e.className="st";e.textContent=(i+1)+" "+s[0];seqEl.appendChild(e);stepEls.push(e);});
+  const h=document.createElement("span");h.id="hint";seqEl.appendChild(h);OUT.hint=h;})();
+function syncSteps(){for(let i=0;i<stepEls.length;i++){setCls(stepEls[i],"cur",mode==="guided"&&i===stepIdx);setCls(stepEls[i],"done",mode==="guided"&&i<stepIdx);}}
+function nextStep(){if(mode!=="guided"||S.frozen||stepIdx>=STEPS.length)return;if(!C.power){hint("No power: the console is dead.");return;}const s=STEPS[stepIdx];if(s[2])hint(s[2]);s[1]();stepIdx++;syncSteps();}
+function reset(newEng){
+  if(newEng)eng=newEng;
+  {const r=$("rMv");if(r){r.value=PARAMS.mvOpenTime;if(r.oninput)r.oninput();}}
+  C.hv3=false;C.mvCmd=false;C.purge=false;C.vent=true;C.arm=false;C.keyWasIn=false;C.regFailed=false;C.power=true;C.aborted=false;C.goPolled=false;
+  S=newSim(eng);acc=0;stepIdx=0;endT=0;reportShown=false;anim.flash=0;anim.shock=0;anim.shake=0;anim.scorch=0;FXE.active=false;FXE.done=false;FXM.active=false;FXM.done=false;
+  for(let i=0;i<NP;i++)PT[i].on=false;
+  $("report").className="";$("stand").classList.remove("dead");OUT.fault.style.display="none";
+  setT("note",eng.label+" — "+eng.note+"  ["+eng.type+", design "+eng.designPc_bar+" bar, burst "+fmt(eng.burstPc_bar,0)+" bar]");
+  hint(mode==="guided"?"Guided countdown: press SPACE (or click the valves yourself). Wrong order is allowed — and has consequences.":"Free play: do anything in any order. ABORT is always live.");
+  syncSteps();layout();
+}
+// wiring
+B.hv3.onclick=ACT.HV3;B.arm.onclick=ACT.ARM;B.ign.onclick=ACT.IGN;B.mv.onclick=ACT.MV1;B.pv3.onclick=ACT.PV3;B.pv1.onclick=ACT.PV1;$("bAbort").onclick=ACT.ABORT;
+B.reg.onclick=()=>{if(!S.frozen){C.regFailed=true;hint("FAULT INJECTED: regulator seat failed open.");}};
+B.pwr.onclick=()=>{if(S.frozen||!C.power)return;C.power=false;C.mvCmd=false;C.vent=true;C.purge=true;S.ignT=0;S.cutT=S.t;S.pfAtCut=S.Pf;hint("FAULT INJECTED: power lost. Every valve goes to its spring position.");};
+$("bReset").onclick=()=>reset();$("bReset2").onclick=()=>reset();
+function bindRange(id,out,f,show){const el=$(id),o=$(out);const u=()=>{const v=parseFloat(el.value);f(v);o.textContent=show(v);};el.oninput=u;u();}
+bindRange("rMv","vMv",v=>{C.mvTime=v;},v=>v.toFixed(2)+" s");bindRange("rReg","vReg",v=>{C.regSet=v*1e5;},v=>v.toFixed(0)+" bar");
+function bindSeg(id,attr,f){const seg=$(id);seg.onclick=e=>{const b=e.target.closest("button");if(!b)return;Array.prototype.forEach.call(seg.children,x=>x.classList.toggle("on",x===b));f(b.getAttribute(attr));};}
+(function(){const seg=$("engSeg");Object.keys(ENGINES).forEach((k,i)=>{const b=document.createElement("button");b.setAttribute("data-e",k);b.textContent=ENGINES[k].label;b.setAttribute("data-zh",({ast91:"我們的真實引擎",conical:"錐形噴嘴",bell:"大鐘型噴嘴",kerolox:"液氧+煤油"})[k]||"");if(i===0)b.className="on";seg.appendChild(b);});
+  const r=document.createElement("button");r.setAttribute("data-e","random");r.textContent="⚄ RANDOM ENGINE";r.setAttribute("data-zh","隨機產生一顆");seg.appendChild(r);
+  const sel=$("sInj");PARAMS.injOptions.forEach((o,i)=>{const op=document.createElement("option");op.value=i;op.textContent=o.label;sel.appendChild(op);});sel.onchange=()=>{C.injIdx=parseInt(sel.value,10);};})();
+bindSeg("engSeg","data-e",k=>{engKey=k;reset(k==="random"?randomEngine(seedCtr=(seedCtr*1103515245+12345)&0x7fffffff):ENGINES[k]);});
+bindSeg("modeSeg","data-m",m=>{mode=m;seqEl.style.opacity=m==="guided"?1:0.45;syncSteps();hint(m==="guided"?"Guided countdown: SPACE runs the next step.":"Free play: do anything in any order. ABORT is always live.");});
+bindSeg("tsSeg","data-ts",v=>{timeScale=parseFloat(v);});
+B.snd.onclick=()=>{muted=!muted;if(!muted)audioInit();audioMute(muted);B.snd.textContent=muted?"SOUND OFF":"SOUND ON";setCls(B.snd,"on",!muted);};
+$("bPrompt").onclick=()=>{$("dlgPre").textContent=$("promptText").value;$("dlg").showModal();};$("bClose").onclick=()=>$("dlg").close();
+$("bCopy").onclick=()=>{const ta=$("promptText");const fb=()=>{try{ta.select();document.execCommand("copy");}catch(e){}};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(ta.value).catch(fb);else fb();};
+window.addEventListener("keydown",e=>{if(e.target&&(e.target.tagName==="INPUT"||e.target.tagName==="SELECT"))return;if($("dlg").open)return;
+  if(e.code==="Space"){e.preventDefault();if(mode!=="guided"&&!S.frozen){const c=$("modeSeg").children;for(let i=0;i<c.length;i++)if(c[i].getAttribute("data-m")==="guided")c[i].click();}nextStep();}else if(e.key==="a"||e.key==="A")ACT.ABORT();else if(e.key==="r"||e.key==="R")reset();else if(e.key==="s"||e.key==="S")B.snd.onclick();});
+// teaching cards
+const card=$("card");let cardCode="";
+function showCard(code,px,py){const cd=CARDS[code];if(!cd){hideCard();return;}
+  if(cardCode!==code){cardCode=code;$("cName").textContent=cd.name;$("cWhat").textContent=cd.what;$("cWo").textContent="Without it: "+cd.without;$("cCode").textContent=code;card.style.display="block";}
+  const w=card.offsetWidth,h=card.offsetHeight;card.style.left=Math.min(window.innerWidth-w-8,px+16)+"px";card.style.top=Math.max(8,Math.min(window.innerHeight-h-8,py-h-12))+"px";}
+function hideCard(){if(cardCode){cardCode="";card.style.display="none";}}
+function hitAt(e){const r=cs.el.getBoundingClientRect(),x=(e.clientX-r.left-vox)/vs,y=(e.clientY-r.top-voy)/vs;
+  for(let i=0;i<HITS.length;i++){const h=HITS[i],dx=x-h.x,dy=y-h.y;if(dx*dx+dy*dy<h.r*h.r)return h;}return null;}
+cs.el.addEventListener("mousemove",e=>{const h=hitAt(e);if(h){showCard(h.c,e.clientX,e.clientY);cs.el.style.cursor=h.click?"pointer":"help";}else{hideCard();cs.el.style.cursor="default";}});
+cs.el.addEventListener("mouseleave",hideCard);
+cs.el.addEventListener("click",e=>{const h=hitAt(e);if(h&&h.click&&ACT[h.c]){ACT[h.c]();showCard(h.c,e.clientX,e.clientY);}});
+Array.prototype.forEach.call(document.querySelectorAll("[data-code]"),el=>{el.addEventListener("mouseenter",e=>{const r=el.getBoundingClientRect();showCard(el.getAttribute("data-code"),r.left,r.top);});el.addEventListener("mouseleave",hideCard);});
+window.addEventListener("resize",layout);
+
+/* ---- 11 Main loop ---- */
+let lastNow=performance.now(),fpsAcc=0,fpsN=0,uiT=0;
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt=clamp((now-lastNow)/1000,0,1/20);lastNow=now;
+  if(!S.frozen){acc+=dt*timeScale;let n=Math.floor(acc/PARAMS.DT);if(n>900)n=900;acc-=n*PARAMS.DT;if(acc>0.05)acc=0;
+    for(let i=0;i<n&&!S.frozen;i++)step(PARAMS.DT);
+    checkFault();if(S.ending)startEnding();}
+  else if(S.ending&&!reportShown){endT+=dt;if(endT>(S.ending.code==="CLEAN_RUN"?0.5:2.4))showReport();}
+  anim.flash*=Math.exp(-dt*7);if(anim.shock>0){anim.shock+=dt*1.1;if(anim.shock>1)anim.shock=0;}anim.shake*=Math.exp(-dt*(S.ending&&S.ending.code==="CHUG"?1.2:3));
+  updParticles(dt);drawStand(dt,now/1000);drawGauges(dt);drawPlots();audioUpdate();
+  uiT+=dt;if(uiT>0.1){uiT=0;updReadouts();syncButtons();}
+  fpsAcc+=dt;fpsN++;if(fpsAcc>0.5){setT("fps",Math.round(fpsN/fpsAcc)+" fps");fpsAcc=0;fpsN=0;}
+}
+
+/* ---- 12 Demo coach: a pulsing ring on the next control, the line to say, and three chained scripts ---- */
+const COACH=(function(){
+  const ring=$("coachRing"),bar=$("coachBar"),kEl=$("coK"),doEl=$("coDo"),sayEl=$("coSay");
+  let on=true,si=0,ti=0,t0=0;
+  const segBtn=(id,attr,val)=>()=>{const c=$(id).children;for(let i=0;i<c.length;i++)if(c[i].getAttribute(attr)===val)return c[i];return $(id);};
+  const el=id=>()=>$(id);
+  const spaceSteps=(say)=>{const a=[];for(let i=0;i<STEPS.length;i++){a.push({space:i,say:say[i]||""});}return a;};
+  const SAY_B={0:"Now the right way. Open the manual valve.",1:"Purge with nitrogen — sweep the line.",3:"Close the vent. Pressure builds.",5:"Arm. Only the test conductor holds this key.",6:"QUICKLY x3 — Igniter first —",7:"QUICKLY — chamber pressure, not our eyes, confirms it lit.",8:"QUICKLY — then oxygen, slowly.",9:"Shut down.",10:"Purge again: flame out, oxygen swept.",11:"Vent to zero.",12:"Key out, in the pocket."};
+  const waits={ 2:()=>Math.max(0,2.3-S.prePurge), 9:()=>S.burnT>=7?0:7-S.burnT, 11:()=>Math.max(0,PARAMS.purgeMin+0.3-S.purgeAfter), 12:()=>Math.max(0,PARAMS.purgeMin+0.3-S.purgeAfter) };
+  const waitSay={2:"Two seconds of nitrogen before anything else.",9:"Chamber pressure, thrust, shock diamonds — all computed live. This table checks the simulation against closed-form answers: green means within one percent.",11:"Hold the purge: four seconds here, thirty on the real stand."};
+  const SCRIPTS=[
+   {name:"THE WRONG WAY",steps:[
+     {t:segBtn("modeSeg","data-m","free"),txt:"Click FREE",done:()=>mode==="free",say:"We're a student rocket team. This is our real engine on its test stand — rebuilt from the equations, by one prompt, in one HTML file."},
+     {t:el("rMv"),txt:()=>"Drag OPEN TIME fully LEFT 拉到最左 (now "+C.mvTime.toFixed(2)+" s → 0.02 s)",done:()=>C.mvTime<=0.05,say:"Every valve here has a reason. Let me show you one. I set the main valve to snap open."},
+     {t:el("bHV3"),txt:"Click HV3",done:()=>C.hv3||!!S.ending,say:"Open the manual valve."},
+     {t:el("bMV"),txt:"Click MAIN VALVE",done:()=>C.mvCmd||!!S.ending,say:"Watch. I open the main valve — too fast."},
+     {t:el("stand"),txt:"DON'T TALK — let it burn",wait:true,done:()=>reportShown,say:""},
+     {t:el("bReset2"),txt:"Read the card, then click RESET",done:()=>!S.ending&&!S.frozen,say:"Oxygen slammed into an empty pipe. Adiabatic compression — hundreds of degrees. No spark needed. That is a real accident: it killed three people in 2007."}]},
+   {name:"THE RIGHT WAY",steps:[{t:segBtn("modeSeg","data-m","guided"),txt:"Click GUIDED",done:()=>mode==="guided",say:"Now the right way."}].concat(spaceSteps(SAY_B)).concat([
+     {t:el("stand"),txt:"Clean run — wait for the report card",wait:true,done:()=>reportShown||!!S.ending,say:""},
+     {t:el("bReset2"),txt:"Click RESET",done:()=>!S.ending&&!S.frozen,say:"A clean run is an ending too — with a report card."}])},
+   {name:"RANDOM ENGINE",steps:[
+     {t:segBtn("engSeg","data-e","random"),txt:"Click RANDOM ENGINE",done:()=>engKey==="random",say:"It also generates random engines — and most random engines are bad engines."}].concat(spaceSteps({0:"Same procedure. Read the note at the bottom: it tells you what is wrong with this design."})).concat([
+     {t:el("bAll"),txt:"Click ALL RESET to start over",done:()=>false,say:"One prompt. One file. Thank you."}])}
+  ];
+  function cur(){return SCRIPTS[si].steps[ti];}
+  function advance(){ti++;t0=performance.now();if(ti>=SCRIPTS[si].steps.length){si=(si+1)%SCRIPTS.length;ti=0;}}
+  function tick(){
+    bar.style.display=on?"flex":"none";if(!on){ring.style.display="none";return;}
+    if(window.__macro){const m=window.__macro;kEl.textContent="AUTO DEMO · "+m.name;doEl.textContent=m.txt||"";sayEl.innerHTML=m.say?"<i>SAY</i>":"";if(m.say)sayEl.appendChild(document.createTextNode(m.say));bar.className="";
+      const r0=m.target&&m.target.getBoundingClientRect();if(r0&&r0.width>0){ring.style.display="block";ring.className="";ring.style.left=(r0.left-6)+"px";ring.style.top=(r0.top-6)+"px";ring.style.width=(r0.width+12)+"px";ring.style.height=(r0.height+12)+"px";}else ring.style.display="none";return;}
+    let st=cur(),guard=0;
+    while(guard++<40){
+      if(st.space!==undefined){ if(S.ending||stepIdx>st.space||mode!=="guided"&&false){ if(S.ending){ // an ending interrupts the guided run: jump to the reset step of this script
+            const ss=SCRIPTS[si].steps;let j=ss.length-1;while(j>ti&&ss[j].t!==undefined&&ss[j].txt.indexOf("RESET")<0)j--;if(j>ti){ti=j;st=cur();break;} }
+          advance();st=cur();continue;} break; }
+      if(st.done&&st.done()){advance();st=cur();continue;} break; }
+    let target=null,txt="",say=st.say||"",waiting=false;
+    if(st.space!==undefined){const w=waits[st.space]?waits[st.space]():0;target=stepEls[st.space];
+      if(w>0.05){waiting=true;txt="WAIT "+w.toFixed(1)+" s — keep talking";say=waitSay[st.space]||say;}else txt="Press SPACE — "+(st.space+1)+" "+STEPS[st.space][0];}
+    else{target=st.t();txt=typeof st.txt==="function"?st.txt():st.txt;waiting=!!st.wait;}
+    kEl.textContent="DEMO "+(si+1)+"/"+SCRIPTS.length+" · "+SCRIPTS[si].name+" · step "+(ti+1)+"/"+SCRIPTS[si].steps.length;
+    doEl.textContent=txt;sayEl.innerHTML=say?"<i>SAY</i>":"";if(say)sayEl.appendChild(document.createTextNode(say));
+    bar.className=waiting?"wait":"";
+    const r=target&&target.getBoundingClientRect();
+    if(r&&r.width>0&&r.bottom>0){ring.style.display="block";ring.className=waiting?"wait":"";ring.style.left=(r.left-6)+"px";ring.style.top=(r.top-6)+"px";ring.style.width=(r.width+12)+"px";ring.style.height=(r.height+12)+"px";}
+    else ring.style.display="none";
+  }
+  setInterval(tick,100);
+  return {toggle(){on=!on;$("bCoach").textContent=on?"COACH ON":"COACH OFF";setCls($("bCoach"),"on",on);},restart(){si=0;ti=0;},isOn:()=>on};
+})();
+$("bCoach").onclick=()=>COACH.toggle();
+$("rMv").addEventListener("change",()=>{const r=$("rMv");if(COACH.isOn()&&mode==="free"&&parseFloat(r.value)<0.4&&parseFloat(r.value)>0.02){r.value=0.02;if(r.oninput)r.oninput();}});
+function allReset(){
+  timeScale=1;{const c=$("tsSeg").children;for(let i=0;i<c.length;i++)c[i].classList.toggle("on",i===0);}
+  {const r=$("rReg");r.value=40;if(r.oninput)r.oninput();}
+  {const sel=$("sInj");sel.value=0;C.injIdx=0;}
+  if($("dlg").open)$("dlg").close();
+  $("modeSeg").children[0].click();$("engSeg").children[0].click();
+  COACH.restart();
+}
+$("bAll").onclick=allReset;
+window.addEventListener("keydown",e=>{if(e.target&&(e.target.tagName==="INPUT"||e.target.tagName==="SELECT"))return;if(e.key==="d"||e.key==="D")COACH.toggle();else if(e.key==="0")allReset();});
+
+/* ---- 13 Auto demos: three buttons that press the real controls in order (nothing is faked: they call the same handlers) ---- */
+const MACRO_LEAD=2600;
+const MACRO=(function(){
+  let timers=[],running=null;
+  function stop(){timers.forEach(clearTimeout);timers=[];window.__macro=null;if(running){running.classList.remove("run");running=null;}}
+  function setRange(id,v){const r=$(id);r.value=v;if(r.oninput)r.oninput();}
+  function modeBtn(m){const c=$("modeSeg").children;for(let i=0;i<c.length;i++)if(c[i].getAttribute("data-m")===m)return c[i];}
+  // step = [delay_ms_after_previous, targetElement|fn, action fn, zh+en caption, english say-line]
+  function play(btn,name,steps){
+    stop();reset();running=btn;btn.classList.add("run");let t=0;
+    steps.forEach(st=>{t+=st[0];timers.push(setTimeout(()=>{
+      if(S.ending&&!st[5])return;const tg=typeof st[1]==="function"?st[1]():st[1];
+      window.__macro={name:name,txt:st[3],say:st[4],target:tg};if(st[2])st[2]();},t));});
+    timers.push(setTimeout(()=>{window.__macro=null;if(running){running.classList.remove("run");running=null;}},t+2600));
+  }
+  const sp=(d,txt,say)=>[d,()=>stepEls[Math.min(stepIdx,stepEls.length-1)],()=>nextStep(),txt,say];
+  $("mac1").onclick=()=>play($("mac1"),"CLEAN START 正確點火",[
+    [50,()=>modeBtn("guided"),()=>modeBtn("guided").click(),"引導模式 GUIDED","The right way: the real start sequence."],
+    sp(350,"1 開手動閥 OPEN HV3","Open the manual valve."),sp(350,"2 氮氣吹除 PURGE ON","Purge with nitrogen."),
+    sp(2300,"3 關吹除 PURGE OFF",""),sp(350,"4 關排氣 CLOSE VENT","Close the vent."),sp(350,"5 最後確認 GO / NO-GO",""),
+    sp(350,"6 插保險鑰匙 ARM KEY","Arm."),sp(450,"7 點火器 IGNITER","Igniter first —"),sp(450,"8 室壓確認點著 Pc CONFIRMS","chamber pressure confirms it lit —"),
+    sp(450,"9 主氧閥慢開 MAIN VALVE RAMP","then oxygen, slowly."),
+    [900,()=>$("reads"),null,"燃燒中 · 看數字 BURNING","Chamber pressure, thrust, shock diamonds — computed live. The table checks the simulation against closed-form answers."],
+    sp(6200,"10 關機 SHUTDOWN","Shut down."),sp(400,"11 吹除 PURGE ON","Purge again."),sp(1500,"12 開排氣 VENT OPEN",""),sp(400,"13 拔鑰匙 KEY OUT","Key out. Clean run.")]);
+  $("mac2").onclick=()=>play($("mac2"),"SNAP-OPEN VALVE 主閥開太快",[
+    [50,()=>modeBtn("free"),()=>modeBtn("free").click(),"自由操作 FREE","Every valve has a reason. Here is one."],
+    [500,()=>$("rMv"),()=>setRange("rMv",0.02),"主閥開啟時間拉到最快 OPEN TIME → 0.02 s","I set the main valve to snap open."],
+    [900,()=>$("bHV3"),()=>$("bHV3").click(),"開手動閥 HV3",""],
+    [900,()=>$("bMV"),()=>$("bMV").click(),"開主氧閥 MAIN VALVE","Watch. Too fast."],
+    [700,()=>$("stand"),null,"不要講話 · 讓它燒","",1],
+    [3200,()=>$("rNum"),null,"讀事故卡上的數字","Oxygen slammed into an empty pipe. Adiabatic compression — over five hundred degrees. No spark needed. It killed three people in 2007.",1]]);
+  $("mac3").onclick=()=>play($("mac3"),"OXYGEN BEFORE FIRE 先給氧後點火",[
+    [50,()=>modeBtn("free"),()=>modeBtn("free").click(),"自由操作 FREE","Second mistake: the order."],
+    [400,()=>$("bPV1"),()=>{if(C.vent)$("bPV1").click();},"關排氣閥 CLOSE VENT",""],
+    [500,()=>$("bHV3"),()=>$("bHV3").click(),"開手動閥 HV3",""],
+    [500,()=>$("bMV"),()=>$("bMV").click(),"先開主氧閥 MAIN VALVE FIRST","Oxygen first. The chamber fills with oxygen and nothing is burning."],
+    [MACRO_LEAD,()=>$("bARM"),()=>$("bARM").click(),"插鑰匙 ARM",""],
+    [400,()=>$("bIGN"),()=>$("bIGN").click(),"現在才點火 IGNITER LATE","Now the igniter — late."],
+    [900,()=>$("stand"),null,"硬啟動 HARD START","",1],
+    [2600,()=>$("rNum"),null,"讀事故卡上的數字","Everything lit at once: a hard start. Fire first, then oxygen — never the other way round.",1]]);
+  return {stop:stop};
+})();
+$("bReset").addEventListener("click",()=>MACRO.stop());$("bReset2").addEventListener("click",()=>MACRO.stop());$("bAll").addEventListener("click",()=>MACRO.stop());$("bAbort").addEventListener("click",()=>MACRO.stop());
+reset(ENGINES.ast91);
+requestAnimationFrame(frame);
+}
+if(typeof document!=="undefined")boot();
+
+</script>
+</body></html>
